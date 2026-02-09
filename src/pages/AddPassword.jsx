@@ -39,8 +39,9 @@ export default function AddPassword() {
 
             navigate('/');
         } catch (err) {
-            console.error(err);
-            setError('Failed to save password.');
+            console.error("Full Backend Error:", err.response?.data || err.message);
+            const detail = err.response?.data?.details || err.response?.data?.error || err.message;
+            setError(`Failed to save password: ${detail}`);
         }
         setLoading(false);
     }

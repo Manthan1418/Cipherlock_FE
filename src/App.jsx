@@ -12,13 +12,27 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
+const PublicRoute = ({ children }) => {
+    const { currentUser } = useAuth();
+    if (currentUser) return <Navigate to="/" />;
+    return children;
+};
+
 function App() {
     return (
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AuthProvider>
                 <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/login" element={
+                        <PublicRoute>
+                            <Login />
+                        </PublicRoute>
+                    } />
+                    <Route path="/register" element={
+                        <PublicRoute>
+                            <Register />
+                        </PublicRoute>
+                    } />
 
                     <Route path="/" element={
                         <ProtectedRoute>

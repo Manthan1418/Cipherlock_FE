@@ -25,7 +25,7 @@ export default function Dashboard() {
             // Let's decrypt all valid ones now.
             decryptAll(res.data);
         } catch (error) {
-            console.error("Failed to fetch vault", error);
+            console.error("Failed to fetch vault", error.response?.data || error.message);
         } finally {
             setLoading(false);
         }
