@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { encryptData } from '../crypto/vaultCrypto';
 import api from '../api/axios';
 import { Lock, Save } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function AddPassword() {
     const [site, setSite] = useState('');
@@ -19,7 +20,7 @@ export default function AddPassword() {
         e.preventDefault();
 
         if (!dbKey) {
-            setError('Vault is locked. Only available for this session.');
+            toast.error('Vault is locked. Only available for this session.');
             return;
         }
 
@@ -37,11 +38,12 @@ export default function AddPassword() {
                 iv: iv
             });
 
+            toast.success('Password saved successfully!');
             navigate('/');
         } catch (err) {
             console.error("Full Backend Error:", err.response?.data || err.message);
             const detail = err.response?.data?.details || err.response?.data?.error || err.message;
-            setError(`Failed to save password: ${detail}`);
+            toast.error(`Failed to save password: ${detail}`);
         }
         setLoading(false);
     }
@@ -60,8 +62,6 @@ export default function AddPassword() {
             <h1 className="text-2xl font-bold mb-6 flex items-center">
                 <Lock className="mr-2" /> Add New Credentials
             </h1>
-
-            {error && <div className="bg-red-500/10 text-red-500 p-3 mb-4 rounded">{error}</div>}
 
             <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-6">
                 <div>

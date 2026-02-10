@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,8 +15,9 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-    const { currentUser } = useAuth();
-    if (currentUser) return <Navigate to="/" />;
+    const { currentUser, dbKey } = useAuth();
+    // Only redirect to dashboard if user is authenticated AND has the key
+    if (currentUser && dbKey) return <Navigate to="/" />;
     return children;
 };
 
@@ -23,6 +25,12 @@ function App() {
     return (
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AuthProvider>
+                <Toaster position="top-right" toastOptions={{
+                    style: {
+                        background: '#333',
+                        color: '#fff',
+                    },
+                }} />
                 <Routes>
                     <Route path="/login" element={
                         <PublicRoute>

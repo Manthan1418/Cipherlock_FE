@@ -1,7 +1,7 @@
 // Zero-Knowledge Encryption Module
 // Uses Web Crypto API for secure, performant operations.
 
-const ITERATIONS = 100000; // High iteration count for PBKDF2
+const ITERATIONS = 600000; // Recommend by OWASP for PBKDF2-HMAC-SHA256
 const HASH_ALGO = 'SHA-256';
 const SALT_SIZE = 16;
 const IV_SIZE = 12; // Standard for GCM

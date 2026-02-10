@@ -62,6 +62,44 @@ export function AuthProvider({ children }) {
         return unsubscribe;
     }, []);
 
+    // Auto-Logout Timer (5 Minutes)
+    useEffect(() => {
+        let timeout;
+        // 5 minutes in milliseconds
+        const TIMEOUT_MS = 5 * 60 * 1000;
+
+        const logoutUser = () => {
+            if (currentUser) {
+                console.log("Auto-logout triggered due to inactivity.");
+                logout();
+            }
+        };
+
+        const resetTimer = () => {
+            if (timeout) clearTimeout(timeout);
+            if (currentUser) {
+                timeout = setTimeout(logoutUser, TIMEOUT_MS);
+            }
+        };
+
+        const events = ['mousemove', 'keypress', 'click', 'scroll'];
+
+        // Throttle slightly if needed, but for this simple MVP, direct call is fine
+        const handleActivity = () => resetTimer();
+
+        if (currentUser) {
+            events.forEach(event => window.addEventListener(event, handleActivity));
+            resetTimer(); // Start timer on mount/login
+        }
+
+        return () => {
+            if (timeout) clearTimeout(timeout);
+            events.forEach(event => window.removeEventListener(event, handleActivity));
+        };
+    }, [currentUser]);
+
+
+
     const value = {
         currentUser,
         dbKey,

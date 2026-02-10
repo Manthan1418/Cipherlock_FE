@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function Register() {
     const [email, setEmail] = useState('');
@@ -16,17 +17,18 @@ export default function Register() {
     async function handleSubmit(e) {
         e.preventDefault();
         if (password !== confirmPassword) {
-            return setError('Passwords do not match');
+            return toast.error('Passwords do not match');
         }
 
         try {
             setError('');
             setLoading(true);
             await signup(email, password, masterPassword);
+            toast.success('Account created successfully!');
             navigate('/');
         } catch (err) {
             console.error(err);
-            setError('Failed to create an account.');
+            toast.error('Failed to create an account.');
         }
         setLoading(false);
     }
@@ -38,7 +40,6 @@ export default function Register() {
                     <Shield className="mx-auto h-12 w-12 text-indigo-500" />
                     <h2 className="mt-6 text-3xl font-extrabold text-white">Create a PassMan Account</h2>
                 </div>
-                {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded">{error}</div>}
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4">
                         <div>

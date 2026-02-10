@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { decryptData } from '../crypto/vaultCrypto';
 import { Plus, Trash2, Copy, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function Dashboard() {
     const [passwords, setPasswords] = useState([]);
@@ -26,6 +27,7 @@ export default function Dashboard() {
             decryptAll(res.data);
         } catch (error) {
             console.error("Failed to fetch vault", error.response?.data || error.message);
+            toast.error("Failed to load vault items");
         } finally {
             setLoading(false);
         }
@@ -52,14 +54,16 @@ export default function Dashboard() {
         try {
             await api.delete(`/vault/${id}`);
             setPasswords(prev => prev.filter(p => p.id !== id));
+            toast.success("Password deleted");
         } catch (error) {
             console.error("Failed to delete", error);
+            toast.error("Failed to delete password");
         }
     }
 
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text);
-        // Could add a toast notification here
+        toast.success("Copied to clipboard!");
     }
 
     function toggleVisibility(id) {

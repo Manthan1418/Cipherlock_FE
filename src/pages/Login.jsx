@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { deriveKey } from '../crypto/vaultCrypto';
+import { toast } from 'react-hot-toast';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -21,10 +22,11 @@ export default function Login() {
 
             // This calls our context login which derives the key
             await login(email, password, masterPassword);
+            toast.success('Welcome back!');
             navigate('/');
         } catch (err) {
             console.error(err);
-            setError('Failed to log in. Check your credentials.');
+            toast.error('Failed to log in. Check your credentials.');
         }
         setLoading(false);
     }
@@ -35,11 +37,8 @@ export default function Login() {
                 <div className="text-center">
                     <Shield className="mx-auto h-12 w-12 text-indigo-500" />
                     <h2 className="mt-6 text-3xl font-extrabold text-white">Sign in to PassMan</h2>
-                    <p className="mt-2 text-sm text-gray-400">
-                        Zero-Knowledge Encryption
-                    </p>
+
                 </div>
-                {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded">{error}</div>}
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4">
                         <div>
