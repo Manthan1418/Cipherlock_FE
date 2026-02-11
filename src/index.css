@@ -52,6 +52,8 @@
 .particle:nth-child(8) { left: 80%; animation-delay: 4s; animation-duration: 27s; }
 .particle:nth-child(9) { left: 90%; animation-delay: 1s; animation-duration: 23s; }
 .particle:nth-child(10) { left: 15%; animation-delay: 3s; animation-duration: 29s; }
+.particle:nth-child(11) { left: 75%; animation-delay: 0.5s; animation-duration: 26s; }
+.particle:nth-child(12) { left: 85%; animation-delay: 2.5s; animation-duration: 24s; }
 
 @keyframes float {
   0% {

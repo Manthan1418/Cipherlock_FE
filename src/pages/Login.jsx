@@ -1,26 +1,285 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Lock, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Lock, Sparkles, AlertTriangle, UserPlus, LogIn } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 
+// ============================================
+// ANIMATION CONFIGURATION (Easy to tweak)
+// ============================================
+const ANIMATION_CONFIG = {
+    spring: {
+        stiffness: 200,
+        damping: 28,
+        mass: 0.8,
+    },
+    duration: {
+        primary: 0.5,
+        fade: 0.2,
+        stagger: 0.03,
+    },
+    easing: [0.4, 0, 0.2, 1],
+};
+
+// ============================================
+// FLOATING PARTICLES BACKGROUND
+// ============================================
 function Particles() {
     return (
         <div className="particles">
-            {[...Array(10)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
                 <div key={i} className="particle" />
             ))}
         </div>
     );
 }
 
-export default function Login() {
+// ============================================
+// TOP SEMICIRCLE (Login button - visible when on Register)
+// ============================================
+function TopSemicircle({ isVisible, onSwitch, isAnimating }) {
+    const handleClick = () => {
+        if (!isAnimating && isVisible) {
+            onSwitch();
+        }
+    };
+
+    return (
+        <motion.div
+            className="absolute inset-x-0 top-0 overflow-hidden"
+            initial={false}
+            animate={{
+                height: isVisible ? '60px' : '0px',
+                opacity: isVisible ? 1 : 0,
+            }}
+            transition={{
+                type: 'spring',
+                ...ANIMATION_CONFIG.spring,
+            }}
+            style={{ zIndex: 25 }}
+        >
+            <svg
+                className="absolute top-0 w-full pointer-events-none"
+                viewBox="0 0 100 50"
+                preserveAspectRatio="none"
+                style={{
+                    height: '100%',
+                    minHeight: '60px',
+                    transform: 'scaleY(-1)',
+                }}
+            >
+                <defs>
+                    <linearGradient id="topSemicircleGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(99, 102, 241, 0.95)" />
+                        <stop offset="100%" stopColor="rgba(79, 70, 229, 0.98)" />
+                    </linearGradient>
+                    <filter id="topSemicircleShadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="rgba(0,0,0,0.3)" />
+                    </filter>
+                </defs>
+                <ellipse
+                    cx="50"
+                    cy="50"
+                    rx="70"
+                    ry="50"
+                    fill="url(#topSemicircleGradient)"
+                    filter="url(#topSemicircleShadow)"
+                />
+            </svg>
+            <motion.div
+                className="absolute inset-0 bg-gradient-to-b from-indigo-500/20 to-transparent pointer-events-none"
+                animate={{
+                    opacity: isVisible ? 0.3 : 0,
+                }}
+                transition={{ duration: ANIMATION_CONFIG.duration.fade }}
+            />
+            {/* Clickable button area */}
+            <button
+                type="button"
+                onClick={handleClick}
+                disabled={isAnimating || !isVisible}
+                className="absolute top-0 left-0 right-0 h-[60px] flex items-center justify-center cursor-pointer bg-transparent border-none hover:transition-colors duration-200 disabled:cursor-default"
+            >
+                <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isVisible ? 1 : 0 }}
+                    transition={{ duration: 0.15, delay: isVisible ? 0.05 : 0 }}
+                    className="text-white font-semibold text-sm tracking-wide flex items-center gap-2 select-none"
+                    style={{ marginTop: '8px' }}
+                >
+                    <LogIn className="w-4 h-4" />
+                    Login
+                </motion.span>
+            </button>
+        </motion.div>
+    );
+}
+
+// ============================================
+// BOTTOM SEMICIRCLE (Register button - visible when on Login)
+// ============================================
+function BottomSemicircle({ isVisible, onSwitch, isAnimating }) {
+    const handleClick = () => {
+        if (!isAnimating && isVisible) {
+            onSwitch();
+        }
+    };
+
+    return (
+        <motion.div
+            className="absolute inset-x-0 bottom-0 overflow-hidden"
+            initial={false}
+            animate={{
+                height: isVisible ? '60px' : '0px',
+                opacity: isVisible ? 1 : 0,
+            }}
+            transition={{
+                type: 'spring',
+                ...ANIMATION_CONFIG.spring,
+            }}
+            style={{ zIndex: 25 }}
+        >
+            <svg
+                className="absolute bottom-0 w-full pointer-events-none"
+                viewBox="0 0 100 50"
+                preserveAspectRatio="none"
+                style={{
+                    height: '100%',
+                    minHeight: '60px',
+                }}
+            >
+                <defs>
+                    <linearGradient id="bottomSemicircleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="rgba(99, 102, 241, 0.95)" />
+                        <stop offset="100%" stopColor="rgba(79, 70, 229, 0.98)" />
+                    </linearGradient>
+                    <filter id="bottomSemicircleShadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="-4" stdDeviation="8" floodColor="rgba(0,0,0,0.3)" />
+                    </filter>
+                </defs>
+                <ellipse
+                    cx="50"
+                    cy="50"
+                    rx="70"
+                    ry="50"
+                    fill="url(#bottomSemicircleGradient)"
+                    filter="url(#bottomSemicircleShadow)"
+                />
+            </svg>
+            <motion.div
+                className="absolute inset-0 bg-gradient-to-t from-indigo-500/20 to-transparent pointer-events-none"
+                animate={{
+                    opacity: isVisible ? 0.3 : 0,
+                }}
+                transition={{ duration: ANIMATION_CONFIG.duration.fade }}
+            />
+            {/* Clickable button area */}
+            <button
+                type="button"
+                onClick={handleClick}
+                disabled={isAnimating || !isVisible}
+                className="absolute top-0 left-0 right-0 h-[60px] flex items-center justify-center cursor-pointer bg-transparent border-none  transition-colors duration-200 disabled:cursor-default"
+            >
+                <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isVisible ? 1 : 0 }}
+                    transition={{ duration: 0.15, delay: isVisible ? 0.05 : 0 }}
+                    className="text-white font-semibold text-sm tracking-wide flex items-center gap-2 select-none"
+                    style={{ marginBottom: '8px' }}
+                >
+                    <UserPlus className="w-4 h-4" />
+                    Create Account
+                </motion.span>
+            </button>
+        </motion.div>
+    );
+}
+
+// ============================================
+// ANIMATED BUTTON WITH MICRO-INTERACTIONS
+// ============================================
+function AnimatedButton({ children, loading, disabled, type = 'submit', onClick }) {
+    return (
+        <motion.button
+            type={type}
+            disabled={disabled || loading}
+            onClick={onClick}
+            className="relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
+            whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
+            whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        >
+            <AnimatePresence mode="wait">
+                {loading ? (
+                    <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center"
+                    >
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Processing...
+                    </motion.span>
+                ) : (
+                    <motion.span
+                        key="content"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center"
+                    >
+                        {children}
+                    </motion.span>
+                )}
+            </AnimatePresence>
+        </motion.button>
+    );
+}
+
+// ============================================
+// ANIMATED INPUT FIELD
+// ============================================
+function AnimatedInput({ label, type, value, onChange, placeholder, required, delay = 0, icon: Icon, highlight, compact = false }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{
+                duration: ANIMATION_CONFIG.duration.fade,
+                delay,
+            }}
+            className={highlight ? "pt-3 border-t border-gray-700/50" : ""}
+        >
+            <label className={`text-sm font-medium flex items-center ${highlight ? 'text-indigo-400 font-bold' : 'text-gray-300'}`}>
+                {Icon && <Icon className="w-4 h-4 mr-1.5" />}
+                {label}
+            </label>
+            <input
+                type={type}
+                required={required}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className={`mt-1.5 block w-full px-4 ${compact ? 'py-2.5' : 'py-3'} bg-gray-800/50 border rounded-xl text-base text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder-gray-500 ${highlight ? 'border-indigo-500/30' : 'border-gray-600/50'}`}
+            />
+        </motion.div>
+    );
+}
+
+// ============================================
+// LOGIN FORM CONTENT
+// ============================================
+function LoginFormContent() {
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState(''); // Firebase Auth Password
-    const [masterPassword, setMasterPassword] = useState(''); // Local Vault Password
+    const [password, setPassword] = useState('');
+    const [masterPassword, setMasterPassword] = useState('');
     const { login, setTwoFactorVerified } = useAuth();
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showTwoFactor, setShowTwoFactor] = useState(false);
     const [twoFactorCode, setTwoFactorCode] = useState('');
@@ -29,26 +288,19 @@ export default function Login() {
     async function handleSubmit(e) {
         e.preventDefault();
         try {
-            setError('');
             setLoading(true);
-
-            // 1. Initial Login (Firebase + Key Derivation)
             await login(email, password, masterPassword);
-
-            // 2. Check 2FA Status
             const statusRes = await api.get('/auth/2fa/status');
 
             if (statusRes.data.enabled) {
                 setLoading(false);
                 setShowTwoFactor(true);
-                return; // Stop here, wait for code
+                return;
             }
 
-            // 3. If no 2FA, we are done
             setTwoFactorVerified(true);
             toast.success('Welcome back!');
             navigate('/');
-
         } catch (err) {
             console.error(err);
             toast.error('Failed to log in. Check your credentials.');
@@ -61,7 +313,6 @@ export default function Login() {
         try {
             setLoading(true);
             await api.post('/auth/2fa/verify', { code: twoFactorCode });
-
             setTwoFactorVerified(true);
             toast.success('Verified!');
             navigate('/');
@@ -74,126 +325,294 @@ export default function Login() {
 
     if (showTwoFactor) {
         return (
-            <div className="min-h-screen flex items-center justify-center animated-bg px-4 relative overflow-hidden">
-                <Particles />
-                <div className="max-w-md w-full space-y-8 glass p-10 rounded-2xl glow scale-in relative z-10">
-                    <div className="text-center">
-                        <div className="relative inline-block">
-                            <Lock className="mx-auto h-12 w-12 text-indigo-500 pulse-icon" />
-                            <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-400 animate-pulse" />
-                        </div>
-                        <h2 className="mt-6 text-3xl font-extrabold gradient-text">Two-Factor Auth</h2>
-                        <p className="mt-2 text-sm text-gray-400">Enter the 6-digit code from your authenticator app.</p>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6"
+            >
+                <div className="text-center">
+                    <div className="relative inline-block">
+                        <Lock className="mx-auto h-12 w-12 text-indigo-400" />
+                        <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-400 animate-pulse" />
                     </div>
-                    <form className="mt-8 space-y-6" onSubmit={handleVerify2FA}>
-                        <div>
-                            <label className="sr-only">2FA Code</label>
-                            <input
-                                type="text"
-                                maxLength="6"
-                                required
-                                className="block w-full px-3 py-4 border border-gray-600 rounded-xl bg-gray-800/50 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center tracking-[0.5em] text-2xl input-animated transition-all"
-                                placeholder="000000"
-                                value={twoFactorCode}
-                                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-glow group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300"
-                        >
-                            {loading ? (
-                                <span className="flex items-center">
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Verifying...
-                                </span>
-                            ) : 'Verify'}
-                        </button>
-                    </form>
+                    <h2 className="mt-4 text-2xl font-bold gradient-text">Two-Factor Auth</h2>
+                    <p className="mt-2 text-sm text-gray-400">Enter the 6-digit code from your authenticator.</p>
                 </div>
-            </div>
+                <form onSubmit={handleVerify2FA} className="space-y-5">
+                    <input
+                        type="text"
+                        maxLength="6"
+                        required
+                        className="block w-full px-3 py-4 border border-gray-600 rounded-xl bg-gray-800/50 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center tracking-[0.5em] text-2xl transition-all"
+                        placeholder="000000"
+                        value={twoFactorCode}
+                        onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                    />
+                    <AnimatedButton loading={loading}>Verify</AnimatedButton>
+                </form>
+            </motion.div>
         );
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center animated-bg px-4 relative overflow-hidden">
-            <Particles />
-            <div className="max-w-md w-full space-y-8 glass p-10 rounded-2xl glow scale-in relative z-10">
-                <div className="text-center">
-                    <div className="relative inline-block">
-                        <Shield className="mx-auto h-14 w-14 text-indigo-500 shield-bounce" />
-                        <div className="absolute -inset-2 bg-indigo-500/20 rounded-full blur-xl -z-10"></div>
-                    </div>
-                    <h2 className="mt-6 text-3xl font-extrabold gradient-text">Sign in to PassMan</h2>
-                    <p className="mt-2 text-sm text-gray-400">Secure password management</p>
-                </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="space-y-4">
-                        <div className="fade-in" style={{ animationDelay: '0.1s' }}>
-                            <label className="text-sm font-medium text-gray-300">Email address</label>
-                            <input
-                                type="email"
-                                required
-                                className="mt-1 block w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent input-animated transition-all placeholder-gray-500"
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                        <div className="fade-in" style={{ animationDelay: '0.2s' }}>
-                            <label className="text-sm font-medium text-gray-300">Account Password (Firebase)</label>
-                            <input
-                                type="password"
-                                required
-                                className="mt-1 block w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent input-animated transition-all"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-                        <div className="pt-4 border-t border-gray-700/50 fade-in" style={{ animationDelay: '0.3s' }}>
-                            <label className="text-sm font-bold text-indigo-400 flex items-center">
-                                <Lock className="w-4 h-4 mr-1" />
-                                Master Password (Local Vault)
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                className="mt-1 block w-full px-4 py-3 bg-gray-800/50 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent input-animated transition-all"
-                                value={masterPassword}
-                                onChange={(e) => setMasterPassword(e.target.value)}
-                                placeholder="Used to encrypt/decrypt on client"
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn-glow group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300"
-                    >
-                        {loading ? (
-                            <span className="flex items-center">
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Decrypting & Signing In...
-                            </span>
-                        ) : 'Sign In'}
-                    </button>
-
-                    <div className="text-center mt-4">
-                        <Link to="/register" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors hover:underline">
-                            Create an account
-                        </Link>
-                    </div>
-                </form>
+        <motion.div className="space-y-5">
+            <div className="text-center">
+                <Shield className="mx-auto h-12 w-12 text-indigo-400" />
+                <h2 className="mt-4 text-3xl font-bold gradient-text">Sign in to PassMan</h2>
+                <p className="mt-2 text-sm text-gray-400">Secure password management</p>
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <AnimatedInput
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    delay={0.05}
+                />
+                <AnimatedInput
+                    label="Password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    delay={0.1}
+                />
+                <AnimatedInput
+                    label="Master Password"
+                    type="password"
+                    value={masterPassword}
+                    onChange={(e) => setMasterPassword(e.target.value)}
+                    placeholder="Vault decryption key"
+                    required
+                    delay={0.15}
+                    icon={Lock}
+                    highlight
+                />
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="pt-1"
+                >
+                    <AnimatedButton loading={loading}>
+                        <LogIn className="w-5 h-5 mr-2" />
+                        Sign In
+                    </AnimatedButton>
+                </motion.div>
+            </form>
+        </motion.div>
+    );
+}
+
+// ============================================
+// REGISTER FORM CONTENT
+// ============================================
+function RegisterFormContent() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [masterPassword, setMasterPassword] = useState('');
+    const { signup } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        if (password !== confirmPassword) {
+            return toast.error('Passwords do not match');
+        }
+
+        try {
+            setLoading(true);
+            await signup(email, password, masterPassword);
+            toast.success('Account created successfully!');
+            navigate('/');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to create an account.');
+        }
+        setLoading(false);
+    }
+
+    return (
+        <motion.div className="space-y-5">
+            <div className="text-center">
+                <Shield className="mx-auto h-12 w-12 text-indigo-400" />
+                <h2 className="mt-3 text-2xl font-bold gradient-text">Create Account</h2>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+                <AnimatedInput
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    delay={0.05}
+                    compact
+                />
+                <div className="grid grid-cols-2 gap-3">
+                    <AnimatedInput
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        delay={0.1}
+                        compact
+                    />
+                    <AnimatedInput
+                        label="Confirm"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        delay={0.1}
+                        compact
+                    />
+                </div>
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.15 }}
+                    className="pt-2 border-t border-gray-700/50"
+                >
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-700/30 mb-3">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                        <p className="text-xs text-amber-200">Master Password cannot be recovered!</p>
+                    </div>
+                    <AnimatedInput
+                        label="Master Password"
+                        type="password"
+                        value={masterPassword}
+                        onChange={(e) => setMasterPassword(e.target.value)}
+                        required
+                        delay={0}
+                        icon={Lock}
+                        highlight
+                        compact
+                    />
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <AnimatedButton loading={loading}>
+                        <UserPlus className="w-5 h-5 mr-2" />
+                        Create Account
+                    </AnimatedButton>
+                </motion.div>
+            </form>
+        </motion.div>
+    );
+}
+
+// ============================================
+// MAIN LOGIN COMPONENT (with animated transition to Register)
+// ============================================
+export default function Login({ initialMode = 'login' }) {
+    const [mode, setMode] = useState(initialMode);
+    const [isAnimating, setIsAnimating] = useState(false);
+
+    const handleSwitch = useCallback(() => {
+        if (isAnimating) return;
+        setIsAnimating(true);
+        setMode((prev) => (prev === 'login' ? 'register' : 'login'));
+        setTimeout(() => {
+            setIsAnimating(false);
+        }, ANIMATION_CONFIG.duration.primary * 1000 + 100);
+    }, [isAnimating]);
+
+    const isRegister = mode === 'register';
+
+    const formVariants = {
+        initial: {
+            opacity: 0,
+        },
+        animate: {
+            opacity: 1,
+            transition: {
+                duration: 0.25,
+            },
+        },
+        exit: {
+            opacity: 0,
+            transition: {
+                duration: 0.15,
+            },
+        },
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center animated-bg px-4 py-8 relative overflow-hidden">
+            <Particles />
+
+            <motion.div
+                className="relative w-full max-w-lg"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: ANIMATION_CONFIG.easing }}
+            >
+                <motion.div
+                    className="relative z-10 glass rounded-2xl overflow-hidden"
+                    animate={{
+                        boxShadow: isRegister
+                            ? '0 25px 50px -12px rgba(79, 70, 229, 0.25), 0 0 0 1px rgba(99, 102, 241, 0.1)'
+                            : '0 20px 40px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(75, 85, 99, 0.2)',
+                    }}
+                    transition={{ type: 'spring', ...ANIMATION_CONFIG.spring }}
+                >
+                    {/* Top semicircle - Login (visible when on Register) */}
+                    <TopSemicircle isVisible={isRegister} onSwitch={handleSwitch} isAnimating={isAnimating} />
+                    
+                    {/* Bottom semicircle - Register (visible when on Login) */}
+                    <BottomSemicircle isVisible={!isRegister} onSwitch={handleSwitch} isAnimating={isAnimating} />
+
+                    <div className="relative z-20 p-6 sm:p-8" style={{ paddingTop: isRegister ? '70px' : '28px', paddingBottom: !isRegister ? '70px' : '24px' }}>
+                        <AnimatePresence mode="wait">
+                            {mode === 'login' ? (
+                                <motion.div
+                                    key="login"
+                                    variants={formVariants}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                >
+                                    <LoginFormContent />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="register"
+                                    variants={formVariants}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                >
+                                    <RegisterFormContent />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    className="absolute -inset-4 rounded-3xl -z-10"
+                    animate={{
+                        background: isRegister
+                            ? 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%)'
+                            : 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
+                    }}
+                    transition={{ duration: 0.6 }}
+                />
+            </motion.div>
         </div>
     );
 }
