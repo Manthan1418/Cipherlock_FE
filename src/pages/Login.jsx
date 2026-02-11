@@ -1,9 +1,19 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Lock } from 'lucide-react';
+import { Shield, Lock, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/axios';
+
+function Particles() {
+    return (
+        <div className="particles">
+            {[...Array(10)].map((_, i) => (
+                <div key={i} className="particle" />
+            ))}
+        </div>
+    );
+}
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -64,11 +74,15 @@ export default function Login() {
 
     if (showTwoFactor) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
-                <div className="max-w-md w-full space-y-8 bg-gray-800 p-10 rounded-xl shadow-2xl border border-gray-700">
+            <div className="min-h-screen flex items-center justify-center animated-bg px-4 relative overflow-hidden">
+                <Particles />
+                <div className="max-w-md w-full space-y-8 glass p-10 rounded-2xl glow scale-in relative z-10">
                     <div className="text-center">
-                        <Lock className="mx-auto h-12 w-12 text-indigo-500" />
-                        <h2 className="mt-6 text-3xl font-extrabold text-white">Two-Factor Auth</h2>
+                        <div className="relative inline-block">
+                            <Lock className="mx-auto h-12 w-12 text-indigo-500 pulse-icon" />
+                            <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-400 animate-pulse" />
+                        </div>
+                        <h2 className="mt-6 text-3xl font-extrabold gradient-text">Two-Factor Auth</h2>
                         <p className="mt-2 text-sm text-gray-400">Enter the 6-digit code from your authenticator app.</p>
                     </div>
                     <form className="mt-8 space-y-6" onSubmit={handleVerify2FA}>
@@ -78,7 +92,7 @@ export default function Login() {
                                 type="text"
                                 maxLength="6"
                                 required
-                                className="block w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-center tracking-[0.5em] text-2xl"
+                                className="block w-full px-3 py-4 border border-gray-600 rounded-xl bg-gray-800/50 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center tracking-[0.5em] text-2xl input-animated transition-all"
                                 placeholder="000000"
                                 value={twoFactorCode}
                                 onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
@@ -88,9 +102,17 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="btn-glow group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300"
                         >
-                            {loading ? 'Verifying...' : 'Verify'}
+                            {loading ? (
+                                <span className="flex items-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Verifying...
+                                </span>
+                            ) : 'Verify'}
                         </button>
                     </form>
                 </div>
@@ -99,40 +121,49 @@ export default function Login() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
-            <div className="max-w-md w-full space-y-8 bg-gray-800 p-10 rounded-xl shadow-2xl border border-gray-700">
+        <div className="min-h-screen flex items-center justify-center animated-bg px-4 relative overflow-hidden">
+            <Particles />
+            <div className="max-w-md w-full space-y-8 glass p-10 rounded-2xl glow scale-in relative z-10">
                 <div className="text-center">
-                    <Shield className="mx-auto h-12 w-12 text-indigo-500" />
-                    <h2 className="mt-6 text-3xl font-extrabold text-white">Sign in to PassMan</h2>
+                    <div className="relative inline-block">
+                        <Shield className="mx-auto h-14 w-14 text-indigo-500 shield-bounce" />
+                        <div className="absolute -inset-2 bg-indigo-500/20 rounded-full blur-xl -z-10"></div>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-extrabold gradient-text">Sign in to PassMan</h2>
+                    <p className="mt-2 text-sm text-gray-400">Secure password management</p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4">
-                        <div>
+                        <div className="fade-in" style={{ animationDelay: '0.1s' }}>
                             <label className="text-sm font-medium text-gray-300">Email address</label>
                             <input
                                 type="email"
                                 required
-                                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="mt-1 block w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent input-animated transition-all placeholder-gray-500"
+                                placeholder="you@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
-                        <div>
+                        <div className="fade-in" style={{ animationDelay: '0.2s' }}>
                             <label className="text-sm font-medium text-gray-300">Account Password (Firebase)</label>
                             <input
                                 type="password"
                                 required
-                                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="mt-1 block w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent input-animated transition-all"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
-                        <div className="pt-4 border-t border-gray-700">
-                            <label className="text-sm font-bold text-indigo-400">Master Password (Local Vault)</label>
+                        <div className="pt-4 border-t border-gray-700/50 fade-in" style={{ animationDelay: '0.3s' }}>
+                            <label className="text-sm font-bold text-indigo-400 flex items-center">
+                                <Lock className="w-4 h-4 mr-1" />
+                                Master Password (Local Vault)
+                            </label>
                             <input
                                 type="password"
                                 required
-                                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="mt-1 block w-full px-4 py-3 bg-gray-800/50 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent input-animated transition-all"
                                 value={masterPassword}
                                 onChange={(e) => setMasterPassword(e.target.value)}
                                 placeholder="Used to encrypt/decrypt on client"
@@ -143,13 +174,21 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                        className="btn-glow group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300"
                     >
-                        {loading ? 'Decrypting & Signing In...' : 'Sign In'}
+                        {loading ? (
+                            <span className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Decrypting & Signing In...
+                            </span>
+                        ) : 'Sign In'}
                     </button>
 
                     <div className="text-center mt-4">
-                        <Link to="/register" className="text-sm text-indigo-400 hover:text-indigo-300">
+                        <Link to="/register" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors hover:underline">
                             Create an account
                         </Link>
                     </div>
