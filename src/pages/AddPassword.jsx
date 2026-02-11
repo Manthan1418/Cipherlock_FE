@@ -89,11 +89,12 @@ export default function AddPassword() {
         return (
             <div className="flex flex-col items-center justify-center h-64 glass rounded-2xl p-8 glow fade-in max-w-md mx-auto">
                 <Shield className="w-16 h-16 text-red-500 mb-4 pulse-icon" />
-                <h3 className="text-xl font-bold text-red-400 mb-2">Vault Locked</h3>
-                <p className="text-gray-400 text-center">Please logout and login again with your Master Password.</p>
+                <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--error-text)' }}>Vault Locked</h3>
+                <p className="text-center" style={{ color: 'var(--text-secondary)' }}>Please logout and login again with your Master Password.</p>
             </div>
         )
     }
+
 
     return (
         <div className="max-w-2xl mx-auto px-4 fade-in">
@@ -103,47 +104,73 @@ export default function AddPassword() {
 
             <form onSubmit={handleSubmit} className="glass p-8 rounded-2xl glow space-y-6">
                 <div className="fade-in" style={{ animationDelay: '0.1s' }}>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Site / Service</label>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Site / Service</label>
                     <input
                         type="text"
                         required
-                        className="w-full bg-gray-800/50 border border-gray-600/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all placeholder-gray-500"
+                        className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
+                        style={{
+                            backgroundColor: 'var(--bg-input)',
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--border-input)'
+                        }}
                         placeholder="e.g. Netflix"
                         value={site}
                         onChange={(e) => setSite(e.target.value)}
                     />
                 </div>
 
+
                 <div className="fade-in" style={{ animationDelay: '0.15s' }}>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Username</label>
                     <input
                         type="text"
                         required
-                        className="w-full bg-gray-800/50 border border-gray-600/50 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all placeholder-gray-500"
+                        className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
+                        style={{
+                            backgroundColor: 'var(--bg-input)',
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--border-input)'
+                        }}
                         placeholder="email@example.com"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 </div>
 
+
                 <div className="fade-in" style={{ animationDelay: '0.2s' }}>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Password</label>
                     <input
                         type="text"
                         required
-                        className="w-full bg-gray-800/50 border border-gray-600/50 rounded-xl px-4 py-3 text-white font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
+                        className="w-full border rounded-xl px-4 py-3 font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
+                        style={{
+                            backgroundColor: 'var(--bg-input)',
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--border-input)'
+                        }}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
                 </div>
 
+
                 {/* Password Generator Section */}
-                <div className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 p-5 rounded-xl border border-gray-700/50 fade-in" style={{ animationDelay: '0.25s' }}>
+                <div 
+                    className="p-5 rounded-xl fade-in" 
+                    style={{ 
+                        animationDelay: '0.25s',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)'
+                    }}
+                >
                     <button
                         type="button"
                         onClick={() => setShowGenerator(!showGenerator)}
                         className="flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300 focus:outline-none transition-colors"
                     >
+
                         <Sparkles className="w-4 h-4 mr-2" />
                         {showGenerator ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
                         {showGenerator ? "Hide Password Generator" : "Show Password Generator"}
@@ -167,43 +194,60 @@ export default function AddPassword() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <label className="flex items-center space-x-3 cursor-pointer glass p-3 rounded-xl hover:bg-gray-700/50 transition-all card-hover">
+                                <label 
+                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
+                                    style={{ backgroundColor: 'var(--bg-input)' }}
+                                >
                                     <input
                                         type="checkbox"
                                         checked={includeUppercase}
                                         onChange={(e) => setIncludeUppercase(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500 bg-gray-700 border-gray-500"
+                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
                                     />
-                                    <span className="text-sm text-gray-300 font-medium">A-Z</span>
+                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>A-Z</span>
                                 </label>
-                                <label className="flex items-center space-x-3 cursor-pointer glass p-3 rounded-xl hover:bg-gray-700/50 transition-all card-hover">
+                                <label 
+                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
+                                    style={{ backgroundColor: 'var(--bg-input)' }}
+                                >
                                     <input
                                         type="checkbox"
                                         checked={includeLowercase}
                                         onChange={(e) => setIncludeLowercase(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500 bg-gray-700 border-gray-500"
+                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
                                     />
-                                    <span className="text-sm text-gray-300 font-medium">a-z</span>
+                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>a-z</span>
                                 </label>
-                                <label className="flex items-center space-x-3 cursor-pointer glass p-3 rounded-xl hover:bg-gray-700/50 transition-all card-hover">
+                                <label 
+                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
+                                    style={{ backgroundColor: 'var(--bg-input)' }}
+                                >
                                     <input
                                         type="checkbox"
                                         checked={includeNumbers}
                                         onChange={(e) => setIncludeNumbers(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500 bg-gray-700 border-gray-500"
+                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
                                     />
-                                    <span className="text-sm text-gray-300 font-medium">0-9</span>
+                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>0-9</span>
                                 </label>
-                                <label className="flex items-center space-x-3 cursor-pointer glass p-3 rounded-xl hover:bg-gray-700/50 transition-all card-hover">
+                                <label 
+                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
+                                    style={{ backgroundColor: 'var(--bg-input)' }}
+                                >
                                     <input
                                         type="checkbox"
                                         checked={includeSymbols}
                                         onChange={(e) => setIncludeSymbols(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500 bg-gray-700 border-gray-500"
+                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
                                     />
-                                    <span className="text-sm text-gray-300 font-medium">!@#</span>
+                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>!@#</span>
                                 </label>
                             </div>
+
 
                             <button
                                 type="button"

@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -22,16 +24,26 @@ const PublicRoute = ({ children }) => {
     return children;
 };
 
-function App() {
+function ThemedToaster() {
+    const { isDark } = useTheme();
     return (
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <AuthProvider>
-                <Toaster position="top-right" toastOptions={{
-                    style: {
-                        background: '#333',
-                        color: '#fff',
-                    },
-                }} />
+        <Toaster 
+            position="top-right" 
+            toastOptions={{
+                style: {
+                    background: isDark ? '#333' : '#fff',
+                    color: isDark ? '#fff' : '#0f172a',
+                },
+            }} 
+        />
+    );
+}
+
+function AppContent() {
+    return (
+        <>
+            <ThemedToaster />
+
                 <Routes>
                     <Route path="/login" element={
                         <PublicRoute>
@@ -71,7 +83,18 @@ function App() {
                     {/* Catch all - Redirect to Home */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-            </AuthProvider>
+        </>
+    );
+}
+
+function App() {
+    return (
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <ThemeProvider>
+                <AuthProvider>
+                    <AppContent />
+                </AuthProvider>
+            </ThemeProvider>
         </Router>
     );
 }

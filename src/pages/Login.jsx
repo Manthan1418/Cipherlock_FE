@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, Sparkles, AlertTriangle, UserPlus, LogIn } from 'lucide-react';
+import { Shield, Lock, Sparkles, AlertTriangle, UserPlus, LogIn, Sun, Moon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
+
 
 // ============================================
 // ANIMATION CONFIGURATION (Easy to tweak)
@@ -201,16 +203,21 @@ function BottomSemicircle({ isVisible, onSwitch, isAnimating }) {
 // ANIMATED BUTTON WITH MICRO-INTERACTIONS
 // ============================================
 function AnimatedButton({ children, loading, disabled, type = 'submit', onClick }) {
+    const { isDark } = useTheme();
     return (
         <motion.button
             type={type}
             disabled={disabled || loading}
             onClick={onClick}
-            className="relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
+            className="relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
+            style={{ 
+                '--tw-ring-offset-color': isDark ? '#111827' : '#ffffff'
+            }}
             whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
             whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
+
             <AnimatePresence mode="wait">
                 {loading ? (
                     <motion.span
@@ -254,9 +261,13 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
                 duration: ANIMATION_CONFIG.duration.fade,
                 delay,
             }}
-            className={highlight ? "pt-3 border-t border-gray-700/50" : ""}
+            className={highlight ? "pt-3" : ""}
+            style={highlight ? { borderTop: '1px solid var(--border-color)' } : {}}
         >
-            <label className={`text-sm font-medium flex items-center ${highlight ? 'text-indigo-400 font-bold' : 'text-gray-300'}`}>
+            <label 
+                className="text-sm font-medium flex items-center"
+                style={{ color: highlight ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
+            >
                 {Icon && <Icon className="w-4 h-4 mr-1.5" />}
                 {label}
             </label>
@@ -266,11 +277,18 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                className={`mt-1.5 block w-full px-4 ${compact ? 'py-2.5' : 'py-3'} bg-gray-800/50 border rounded-xl text-base text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder-gray-500 ${highlight ? 'border-indigo-500/30' : 'border-gray-600/50'}`}
+                className={`mt-1.5 block w-full px-4 ${compact ? 'py-2.5' : 'py-3'} border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all input-animated`}
+                style={{
+                    backgroundColor: 'var(--bg-input)',
+                    color: 'var(--text-primary)',
+                    borderColor: highlight ? 'var(--accent-primary)' : 'var(--border-input)',
+                    '--tw-placeholder-color': 'var(--text-muted)'
+                }}
             />
         </motion.div>
     );
 }
+
 
 // ============================================
 // LOGIN FORM CONTENT
@@ -336,14 +354,19 @@ function LoginFormContent() {
                         <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-400 animate-pulse" />
                     </div>
                     <h2 className="mt-4 text-2xl font-bold gradient-text">Two-Factor Auth</h2>
-                    <p className="mt-2 text-sm text-gray-400">Enter the 6-digit code from your authenticator.</p>
+                    <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Enter the 6-digit code from your authenticator.</p>
                 </div>
                 <form onSubmit={handleVerify2FA} className="space-y-5">
                     <input
                         type="text"
                         maxLength="6"
                         required
-                        className="block w-full px-3 py-4 border border-gray-600 rounded-xl bg-gray-800/50 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center tracking-[0.5em] text-2xl transition-all"
+                        className="block w-full px-3 py-4 border rounded-xl text-center tracking-[0.5em] text-2xl transition-all input-animated"
+                        style={{
+                            backgroundColor: 'var(--bg-input)',
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--border-input)'
+                        }}
                         placeholder="000000"
                         value={twoFactorCode}
                         onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
@@ -354,13 +377,15 @@ function LoginFormContent() {
         );
     }
 
+
     return (
         <motion.div className="space-y-5">
             <div className="text-center">
                 <Shield className="mx-auto h-12 w-12 text-indigo-400" />
                 <h2 className="mt-4 text-3xl font-bold gradient-text">Sign in to PassMan</h2>
-                <p className="mt-2 text-sm text-gray-400">Secure password management</p>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Secure password management</p>
             </div>
+
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <AnimatedInput
@@ -419,6 +444,7 @@ function RegisterFormContent() {
     const { signup } = useAuth();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -481,12 +507,20 @@ function RegisterFormContent() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.15 }}
-                    className="pt-2 border-t border-gray-700/50"
+                    className="pt-2"
+                    style={{ borderTop: '1px solid var(--border-color)' }}
                 >
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-700/30 mb-3">
-                        <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                        <p className="text-xs text-amber-200">Master Password cannot be recovered!</p>
+                    <div 
+                        className="flex items-center gap-2 p-3 rounded-lg mb-3"
+                        style={{ 
+                            backgroundColor: 'var(--warning-bg)', 
+                            border: '1px solid var(--warning-border)' 
+                        }}
+                    >
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--warning-text)' }} />
+                        <p className="text-xs" style={{ color: 'var(--warning-text)' }}>Master Password cannot be recovered!</p>
                     </div>
+
                     <AnimatedInput
                         label="Master Password"
                         type="password"
@@ -521,6 +555,8 @@ function RegisterFormContent() {
 export default function Login({ initialMode = 'login' }) {
     const [mode, setMode] = useState(initialMode);
     const [isAnimating, setIsAnimating] = useState(false);
+    const { theme, toggleTheme } = useTheme();
+
 
     const handleSwitch = useCallback(() => {
         if (isAnimating) return;
@@ -554,6 +590,17 @@ export default function Login({ initialMode = 'login' }) {
     return (
         <div className="min-h-screen flex items-center justify-center animated-bg px-4 py-8 relative overflow-hidden">
             <Particles />
+            
+            {/* Theme Toggle Button */}
+            <motion.button
+                onClick={toggleTheme}
+                className="absolute top-4 right-4 p-3 rounded-full glass z-50 transition-all duration-300 hover:scale-110"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+                {theme === 'dark' ? <Sun className="w-5 h-5" style={{ color: 'var(--text-primary)' }} /> : <Moon className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />}
+            </motion.button>
 
             <motion.div
                 className="relative w-full max-w-lg"
@@ -561,6 +608,7 @@ export default function Login({ initialMode = 'login' }) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4, ease: ANIMATION_CONFIG.easing }}
             >
+
                 <motion.div
                     className="relative z-10 glass rounded-2xl overflow-hidden"
                     animate={{

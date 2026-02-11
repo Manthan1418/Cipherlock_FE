@@ -1,6 +1,8 @@
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Shield, ShieldCheck } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
+import { LogOut, Shield, ShieldCheck, Sun, Moon } from "lucide-react";
 import { Link } from "react-router-dom";
+
 
 function Particles() {
     return (
@@ -14,9 +16,11 @@ function Particles() {
 
 export default function Layout({ children }) {
     const { logout, currentUser } = useAuth();
+    const { theme, toggleTheme } = useTheme();
 
     return (
-        <div className="min-h-screen animated-bg text-gray-100 font-sans relative overflow-hidden">
+        <div className="min-h-screen animated-bg font-sans relative overflow-hidden" style={{ color: 'var(--text-primary)' }}>
+
             <Particles />
             <nav className="glass border-b border-gray-700/50 sticky top-0 z-50 fade-in">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,21 +32,58 @@ export default function Layout({ children }) {
                             </Link>
                         </div>
                         <div className="flex items-center">
-                            <span className="mr-4 text-sm text-gray-400 hidden sm:block">{currentUser?.email}</span>
+                            <span className="mr-4 text-sm hidden sm:block" style={{ color: 'var(--text-secondary)' }}>{currentUser?.email}</span>
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
+                                style={{ 
+                                    color: 'var(--text-secondary)',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--glow-color)';
+                                    e.currentTarget.style.color = 'var(--accent-primary)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                }}
+                                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                            >
+                                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                            </button>
                             <Link 
                                 to="/2fa" 
-                                className="p-2 mr-2 rounded-lg hover:bg-indigo-500/20 text-gray-400 hover:text-indigo-400 transition-all duration-300 hover:scale-110" 
+                                className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
+                                style={{ color: 'var(--text-secondary)' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--glow-color)';
+                                    e.currentTarget.style.color = 'var(--accent-primary)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                }}
                                 title="2FA Settings"
                             >
                                 <ShieldCheck className="w-5 h-5" />
                             </Link>
                             <button
                                 onClick={() => logout()}
-                                className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all duration-300 hover:scale-110"
+                                className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
+                                style={{ color: 'var(--text-secondary)' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                    e.currentTarget.style.color = '#ef4444';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                }}
                             >
                                 <LogOut className="w-5 h-5" />
                             </button>
                         </div>
+
                     </div>
                 </div>
             </nav>

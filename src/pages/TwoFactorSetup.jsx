@@ -90,10 +90,11 @@ export default function TwoFactorSetup() {
                     <Loader2 className="animate-spin h-10 w-10 text-indigo-500" />
                     <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl"></div>
                 </div>
-                <p className="text-gray-400 mt-4">Loading 2FA settings...</p>
+                <p className="mt-4" style={{ color: 'var(--text-secondary)' }}>Loading 2FA settings...</p>
             </div>
         );
     }
+
 
     return (
         <div className="max-w-2xl mx-auto px-4 fade-in">
@@ -107,16 +108,26 @@ export default function TwoFactorSetup() {
                 </div>
 
             {isEnabled ? (
-                <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-2xl p-8 text-center scale-in">
+                <div 
+                    className="rounded-2xl p-8 text-center scale-in"
+                    style={{ 
+                        backgroundColor: 'var(--success-bg)', 
+                        border: '1px solid var(--success-border)' 
+                    }}
+                >
                     <div className="flex justify-center mb-4">
-                        <div className="h-20 w-20 bg-green-500/10 rounded-full flex items-center justify-center relative">
-                            <ShieldCheck className="h-10 w-10 text-green-400" />
-                            <Sparkles className="absolute top-0 right-0 w-6 h-6 text-green-400 animate-pulse" />
-                            <div className="absolute inset-0 bg-green-500/20 rounded-full blur-xl"></div>
+                        <div 
+                            className="h-20 w-20 rounded-full flex items-center justify-center relative"
+                            style={{ backgroundColor: 'var(--success-bg)' }}
+                        >
+                            <ShieldCheck className="h-10 w-10" style={{ color: 'var(--success-text)' }} />
+                            <Sparkles className="absolute top-0 right-0 w-6 h-6 animate-pulse" style={{ color: 'var(--success-text)' }} />
+                            <div className="absolute inset-0 rounded-full blur-xl" style={{ backgroundColor: 'var(--success-bg)' }}></div>
                         </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-green-400 mb-2">2FA is Enabled</h3>
-                    <p className="text-gray-300 mb-6">Your account is secured with two-factor authentication.</p>
+                    <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--success-text)' }}>2FA is Enabled</h3>
+                    <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>Your account is secured with two-factor authentication.</p>
+
                     <button
                         onClick={handleDisable}
                         className="px-6 py-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl transition-all btn-glow hover:shadow-red-500/20"
@@ -126,9 +137,10 @@ export default function TwoFactorSetup() {
                 </div>
             ) : (
                 <div className="space-y-6">
-                    <p className="text-gray-300">
+                    <p style={{ color: 'var(--text-secondary)' }}>
                         Protect your account by enabling 2FA. You will be required to enter a code from your authenticator app (like Google Authenticator) when you log in.
                     </p>
+
 
                     {secretData && (
                         <div className="grid md:grid-cols-2 gap-8">
@@ -138,11 +150,19 @@ export default function TwoFactorSetup() {
 
                             <div className="space-y-5">
                                 <div>
-                                    <label className="text-sm text-gray-400 mb-2 block">Manual Entry Secret</label>
+                                    <label className="text-sm mb-2 block" style={{ color: 'var(--text-secondary)' }}>Manual Entry Secret</label>
                                     <div className="flex items-center space-x-2">
-                                        <code className="bg-gray-900/60 px-4 py-3 rounded-xl text-indigo-400 font-mono text-sm flex-1 border border-gray-700/50">
+                                        <code 
+                                            className="px-4 py-3 rounded-xl font-mono text-sm flex-1"
+                                            style={{ 
+                                                backgroundColor: 'var(--bg-input)', 
+                                                color: 'var(--accent-primary)',
+                                                border: '1px solid var(--border-input)'
+                                            }}
+                                        >
                                             {secretData.secret}
                                         </code>
+
                                         <button
                                             onClick={() => {
                                                 navigator.clipboard.writeText(secretData.secret);
@@ -156,16 +176,22 @@ export default function TwoFactorSetup() {
                                 </div>
 
                                 <div>
-                                    <label className="text-sm text-gray-400 mb-2 block">Verification Code</label>
+                                    <label className="text-sm mb-2 block" style={{ color: 'var(--text-secondary)' }}>Verification Code</label>
                                     <input
                                         type="text"
                                         maxLength="6"
                                         value={verificationCode}
                                         onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
                                         placeholder="123456"
-                                        className="block w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none text-center tracking-[0.3em] text-xl input-animated transition-all"
+                                        className="block w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none text-center tracking-[0.3em] text-xl input-animated transition-all"
+                                        style={{
+                                            backgroundColor: 'var(--bg-input)',
+                                            color: 'var(--text-primary)',
+                                            borderColor: 'var(--border-input)'
+                                        }}
                                     />
                                 </div>
+
 
                                 <button
                                     onClick={handleVerify}
