@@ -6,7 +6,7 @@ import {
     signOut,
     onAuthStateChanged
 } from "firebase/auth";
-import { deriveKey } from "../crypto/vaultCrypto";
+import { deriveKey, exportKey, importKey } from "../crypto/vaultCrypto";
 
 const AuthContext = React.createContext();
 
@@ -18,13 +18,27 @@ export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState();
     const [loading, setLoading] = useState(true);
 
-    // We store the Derived Key in memory ONLY. 
-    // If the user refreshes, they must re-enter the master password in a real rigorous app,
-    // OR we can session-store it (risky). 
-    // For this implementation, we will require 'Unlock' if key is missing, but for simplicity
-    // we will derive it at Login/Register and keep it in state. Refreshes will log you out of the "Vault" effectively.
+    // We store the Derived Key in memory and SessionStorage (for reloads).
+    // SessionStorage is cleared when the tab is closed, providing a balance of usability and security.
     const [dbKey, setDbKey] = useState(null);
     const [twoFactorVerified, setTwoFactorVerified] = useState(false);
+
+    // Initialize Key from Session Storage on Mount
+    useEffect(() => {
+        const loadKey = async () => {
+            const storedKey = sessionStorage.getItem('vaultKey');
+            if (storedKey) {
+                try {
+                    const key = await importKey(storedKey);
+                    setDbKey(key);
+                } catch (error) {
+                    console.error("Failed to restore key from session", error);
+                    sessionStorage.removeItem('vaultKey');
+                }
+            }
+        };
+        loadKey();
+    }, []);
 
     // Check 2FA Status when user logs in
     useEffect(() => {
@@ -65,6 +79,12 @@ export function AuthProvider({ children }) {
             .then(async (cred) => {
                 const key = await deriveKey(masterPassword, email);
                 setDbKey(key);
+                try {
+                    const exported = await exportKey(key);
+                    sessionStorage.setItem('vaultKey', exported);
+                } catch (e) {
+                    console.error("Failed to save key session", e);
+                }
                 setTwoFactorVerified(true); // New users don't have 2FA yet
                 return cred;
             });
@@ -75,6 +95,12 @@ export function AuthProvider({ children }) {
             .then(async (cred) => {
                 const key = await deriveKey(masterPassword, email);
                 setDbKey(key);
+                try {
+                    const exported = await exportKey(key);
+                    sessionStorage.setItem('vaultKey', exported);
+                } catch (e) {
+                    console.error("Failed to save key session", e);
+                }
                 // 2FA status check happens in useEffect
                 return cred;
             });
@@ -82,6 +108,8 @@ export function AuthProvider({ children }) {
 
     function logout() {
         setDbKey(null);
+        sessionStorage.removeItem('vaultKey');
+        sessionStorage.removeItem('lastActiveTime'); // Clear activity timer too
         setTwoFactorVerified(false);
         return signOut(auth);
     }
@@ -109,38 +137,62 @@ export function AuthProvider({ children }) {
         return unsubscribe;
     }, []);
 
-    // Auto-Logout Timer (5 Minutes)
+    // Auto-Logout Timer (5 Minutes) with Persistence
     useEffect(() => {
-        let timeout;
-        // 5 minutes in milliseconds
-        const TIMEOUT_MS = 5 * 60 * 1000;
+        if (!currentUser) return;
+
+        const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+        const STORAGE_KEY = 'lastActiveTime';
 
         const logoutUser = () => {
-            if (currentUser) {
-                console.log("Auto-logout triggered due to inactivity.");
-                logout();
-            }
+            console.log("Auto-logout triggered due to inactivity.");
+            logout();
+            localStorage.removeItem(STORAGE_KEY);
         };
 
-        const resetTimer = () => {
-            if (timeout) clearTimeout(timeout);
-            if (currentUser) {
-                timeout = setTimeout(logoutUser, TIMEOUT_MS);
-            }
+        const updateActivity = () => {
+            localStorage.setItem(STORAGE_KEY, Date.now().toString());
         };
 
-        const events = ['mousemove', 'keypress', 'click', 'scroll'];
-
-        // Throttle slightly if needed, but for this simple MVP, direct call is fine
-        const handleActivity = () => resetTimer();
-
-        if (currentUser) {
-            events.forEach(event => window.addEventListener(event, handleActivity));
-            resetTimer(); // Start timer on mount/login
+        // Initialize if not set
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            updateActivity();
         }
 
+        // Check activity periodically
+        const checkActivity = () => {
+            const lastActive = parseInt(localStorage.getItem(STORAGE_KEY) || Date.now().toString());
+            const now = Date.now();
+            if (now - lastActive >= TIMEOUT_MS) {
+                logoutUser();
+            }
+        };
+
+        // Check immediately on mount/focus
+        checkActivity();
+
+        // Check every minute (or less if you want more precision)
+        const intervalId = setInterval(checkActivity, 60 * 1000); // Check every minute
+
+        // Listen for user activity
+        const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+
+        // Throttled update to avoid spamming localStorage
+        let throttleTimer;
+        const handleActivity = () => {
+            if (!throttleTimer) {
+                throttleTimer = setTimeout(() => {
+                    updateActivity();
+                    throttleTimer = null;
+                }, 1000); // Only update once per second max
+            }
+        };
+
+        events.forEach(event => window.addEventListener(event, handleActivity));
+
         return () => {
-            if (timeout) clearTimeout(timeout);
+            clearInterval(intervalId);
+            if (throttleTimer) clearTimeout(throttleTimer);
             events.forEach(event => window.removeEventListener(event, handleActivity));
         };
     }, [currentUser]);

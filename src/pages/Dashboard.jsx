@@ -355,7 +355,7 @@ export default function Dashboard() {
                                 <h3 className="text-lg font-bold mb-2 z-10" style={{ color: 'var(--text-primary)' }}>Security Score</h3>
 
                                 <div className="w-full h-48 relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="100%" height={200}>
                                         <PieChart>
                                             <Pie
                                                 data={strengthStats.data}
