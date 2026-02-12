@@ -210,7 +210,7 @@ function AnimatedButton({ children, loading, disabled, type = 'submit', onClick 
             disabled={disabled || loading}
             onClick={onClick}
             className="relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
-            style={{ 
+            style={{
                 '--tw-ring-offset-color': isDark ? '#111827' : '#ffffff'
             }}
             whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
@@ -264,7 +264,7 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
             className={highlight ? "pt-3" : ""}
             style={highlight ? { borderTop: '1px solid var(--border-color)' } : {}}
         >
-            <label 
+            <label
                 className="text-sm font-medium flex items-center"
                 style={{ color: highlight ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
             >
@@ -510,11 +510,11 @@ function RegisterFormContent() {
                     className="pt-2"
                     style={{ borderTop: '1px solid var(--border-color)' }}
                 >
-                    <div 
+                    <div
                         className="flex items-center gap-2 p-3 rounded-lg mb-3"
-                        style={{ 
-                            backgroundColor: 'var(--warning-bg)', 
-                            border: '1px solid var(--warning-border)' 
+                        style={{
+                            backgroundColor: 'var(--warning-bg)',
+                            border: '1px solid var(--warning-border)'
                         }}
                     >
                         <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--warning-text)' }} />
@@ -590,7 +590,7 @@ export default function Login({ initialMode = 'login' }) {
     return (
         <div className="min-h-screen flex items-center justify-center animated-bg px-4 py-8 relative overflow-hidden">
             <Particles />
-            
+
             {/* Theme Toggle Button */}
             <motion.button
                 onClick={toggleTheme}
@@ -620,7 +620,7 @@ export default function Login({ initialMode = 'login' }) {
                 >
                     {/* Top semicircle - Login (visible when on Register) */}
                     <TopSemicircle isVisible={isRegister} onSwitch={handleSwitch} isAnimating={isAnimating} />
-                    
+
                     {/* Bottom semicircle - Register (visible when on Login) */}
                     <BottomSemicircle isVisible={!isRegister} onSwitch={handleSwitch} isAnimating={isAnimating} />
 

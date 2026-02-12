@@ -5,7 +5,7 @@ import api from '../api/axios';
 import { decryptData } from '../crypto/vaultCrypto';
 import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Shield, Key, AlertTriangle, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import zxcvbn from 'zxcvbn';
+// import zxcvbn from 'zxcvbn'; // Deferred import
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 
@@ -20,29 +20,53 @@ export default function Dashboard() {
         fetchVault();
     }, []);
 
-    const strengthStats = useMemo(() => {
-        const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
-        const weakItems = [];
+    const [strengthStats, setStrengthStats] = useState({ data: [], weakItems: [] });
 
-        passwords.forEach(item => {
-            const pwd = decryptedCache[item.id];
-            if (pwd && !pwd.startsWith("ERROR")) {
-                const score = zxcvbn(pwd).score;
-                stats[score] = (stats[score] || 0) + 1;
-                if (score < 2) {
-                    weakItems.push({ ...item, score });
+    useEffect(() => {
+        let isMounted = true;
+        const calculateStrength = async () => {
+            if (passwords.length === 0) return;
+
+            // Simple debounce/defer to let UI paint first
+            await new Promise(r => setTimeout(r, 100));
+
+            try {
+                const zxcvbnModule = await import('zxcvbn');
+                const zxcvbn = zxcvbnModule.default;
+
+                const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+                const weakItems = [];
+
+                // Process in chunks if needed, but for now just all at once async
+                passwords.forEach(item => {
+                    const pwd = decryptedCache[item.id];
+                    if (pwd && !pwd.startsWith("ERROR")) {
+                        const score = zxcvbn(pwd).score;
+                        stats[score] = (stats[score] || 0) + 1;
+                        if (score < 2) {
+                            weakItems.push({ ...item, score });
+                        }
+                    }
+                });
+
+                if (isMounted) {
+                    const data = [
+                        { name: 'Weak', value: stats[0] + stats[1], color: '#ef4444' },
+                        { name: 'Fair', value: stats[2], color: '#f59e0b' },
+                        { name: 'Good', value: stats[3], color: '#3b82f6' },
+                        { name: 'Strong', value: stats[4], color: '#10b981' },
+                    ].filter(d => d.value > 0);
+
+                    setStrengthStats({ data, weakItems });
                 }
+            } catch (error) {
+                console.error("Failed to load zxcvbn or calculate strength", error);
             }
-        });
+        };
 
-        const data = [
-            { name: 'Weak', value: stats[0] + stats[1], color: '#ef4444' },
-            { name: 'Fair', value: stats[2], color: '#f59e0b' },
-            { name: 'Good', value: stats[3], color: '#3b82f6' },
-            { name: 'Strong', value: stats[4], color: '#10b981' },
-        ].filter(d => d.value > 0);
+        calculateStrength();
 
-        return { data, weakItems };
+        return () => { isMounted = false; };
     }, [passwords, decryptedCache]);
 
     async function fetchVault() {

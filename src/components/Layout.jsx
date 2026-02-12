@@ -36,7 +36,7 @@ export default function Layout({ children }) {
                             <button
                                 onClick={toggleTheme}
                                 className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
-                                style={{ 
+                                style={{
                                     color: 'var(--text-secondary)',
                                 }}
                                 onMouseEnter={(e) => {
@@ -51,8 +51,8 @@ export default function Layout({ children }) {
                             >
                                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                             </button>
-                            <Link 
-                                to="/2fa" 
+                            <Link
+                                to="/2fa"
                                 className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
                                 style={{ color: 'var(--text-secondary)' }}
                                 onMouseEnter={(e) => {
