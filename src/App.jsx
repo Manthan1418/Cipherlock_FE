@@ -27,14 +27,14 @@ const PublicRoute = ({ children }) => {
 function ThemedToaster() {
     const { isDark } = useTheme();
     return (
-        <Toaster 
-            position="top-right" 
+        <Toaster
+            position="top-center"
             toastOptions={{
                 style: {
                     background: isDark ? '#333' : '#fff',
                     color: isDark ? '#fff' : '#0f172a',
                 },
-            }} 
+            }}
         />
     );
 }
@@ -44,45 +44,45 @@ function AppContent() {
         <>
             <ThemedToaster />
 
-                <Routes>
-                    <Route path="/login" element={
-                        <PublicRoute>
-                            <Login />
-                        </PublicRoute>
-                    } />
-                    <Route path="/register" element={
-                        <PublicRoute>
-                            <Register />
-                        </PublicRoute>
-                    } />
+            <Routes>
+                <Route path="/login" element={
+                    <PublicRoute>
+                        <Login />
+                    </PublicRoute>
+                } />
+                <Route path="/register" element={
+                    <PublicRoute>
+                        <Register />
+                    </PublicRoute>
+                } />
 
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <Layout>
-                                <Dashboard />
-                            </Layout>
-                        </ProtectedRoute>
-                    } />
+                <Route path="/" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Dashboard />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
 
-                    <Route path="/add" element={
-                        <ProtectedRoute>
-                            <Layout>
-                                <AddPassword />
-                            </Layout>
-                        </ProtectedRoute>
-                    } />
+                <Route path="/add" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <AddPassword />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
 
-                    <Route path="/2fa" element={
-                        <ProtectedRoute>
-                            <Layout>
-                                <TwoFactorSetup />
-                            </Layout>
-                        </ProtectedRoute>
-                    } />
+                <Route path="/2fa" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <TwoFactorSetup />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
 
-                    {/* Catch all - Redirect to Home */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                {/* Catch all - Redirect to Home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
         </>
     );
 }
