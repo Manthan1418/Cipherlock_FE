@@ -12,7 +12,8 @@ export default {
             console.log('WebAuthn Options:', options);
             let attResp;
             try {
-                attResp = await startRegistration(options);
+                // Fix: Pass options as { optionsJSON: ... } per @simplewebauthn/browser docs
+                attResp = await startRegistration({ optionsJSON: options });
             } catch (error) {
                 if (error.name === 'InvalidStateError') {
                     throw new Error('Authenticator interface already active or key already registered.');
@@ -46,7 +47,8 @@ export default {
             // 2. Pass options to browser
             let asseResp;
             try {
-                asseResp = await startAuthentication(options);
+                // Fix: Pass options as { optionsJSON: ... }
+                asseResp = await startAuthentication({ optionsJSON: options });
             } catch (error) {
                 throw error;
             }
