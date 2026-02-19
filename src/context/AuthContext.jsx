@@ -154,7 +154,7 @@ export function AuthProvider({ children }) {
 
             const result = await apiWebAuthn.loginWithBiometrics(null, uid);
 
-            if (result.verified) {
+            if (result.verified && result.token) {
                 // 1. Sign in with Firebase (using custom token from backend)
                 const { signInWithCustomToken } = await import("firebase/auth");
                 await signInWithCustomToken(auth, result.token);
@@ -162,16 +162,23 @@ export function AuthProvider({ children }) {
                 // 2. Try to restore Vault Key
                 const bioKey = localStorage.getItem('biometric_vault_key');
                 if (bioKey) {
-                    const key = await importKey(bioKey);
-                    setDbKey(key);
-                    sessionStorage.setItem('vaultKey', bioKey);
+                    try {
+                        const key = await importKey(bioKey);
+                        setDbKey(key);
+                        sessionStorage.setItem('vaultKey', bioKey);
+                    } catch (keyError) {
+                        console.error("Failed to restore vault key from storage:", keyError);
+                        // Don't fail the whole login, but user might need to re-enter master password if key is corrupt
+                    }
                 }
 
                 setTwoFactorVerified(true);
                 return true;
+            } else {
+                throw new Error("Verification failed: Invalid response from server");
             }
         } catch (e) {
-            console.error(e);
+            console.error("Biometric Login Failed:", e);
             throw e;
         }
     }
