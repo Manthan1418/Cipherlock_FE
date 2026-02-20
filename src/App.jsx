@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -57,6 +58,11 @@ function ThemedToaster() {
 }
 
 function AppContent() {
+    useEffect(() => {
+        // Optional UX Optimization: background warm-up request
+        fetch('/api/health').catch(() => { });
+    }, []);
+
     return (
         <>
             <ThemedToaster />
