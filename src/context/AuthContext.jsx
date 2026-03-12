@@ -91,12 +91,12 @@ export function AuthProvider({ children }) {
         }
     }
 
-    function signup(email, password, masterPassword) {
+    function signup(email, password) {
         // In a real flow: Create User -> Generate User Salt -> Store Salt on User Profile -> Derive Key -> Store Key in Memory
         // MVP: Use Email as salt (Deterministic).
         return createUserWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const key = await deriveKey(masterPassword, email);
+                const key = await deriveKey(password, email);
                 setDbKey(key);
                 try {
                     const exported = await exportKey(key);
@@ -109,10 +109,10 @@ export function AuthProvider({ children }) {
             });
     }
 
-    function login(email, password, masterPassword) {
+    function login(email, password) {
         return signInWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const key = await deriveKey(masterPassword, email);
+                const key = await deriveKey(password, email);
                 setDbKey(key);
                 try {
                     const exported = await exportKey(key);

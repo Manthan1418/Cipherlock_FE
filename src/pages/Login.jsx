@@ -298,7 +298,6 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
 function LoginFormContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [masterPassword, setMasterPassword] = useState('');
     const { login, setTwoFactorVerified, loginWithBiometrics } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showTwoFactor, setShowTwoFactor] = useState(false);
@@ -351,7 +350,7 @@ function LoginFormContent() {
         e.preventDefault();
         try {
             setLoading(true);
-            await login(email, password, masterPassword);
+            await login(email, password);
             const statusRes = await api.get('/auth/2fa/status');
 
             if (statusRes.data.enabled) {
@@ -449,17 +448,6 @@ function LoginFormContent() {
                     required
                     delay={0.1}
                 />
-                <AnimatedInput
-                    label="Master Password"
-                    type="password"
-                    value={masterPassword}
-                    onChange={(e) => setMasterPassword(e.target.value)}
-                    placeholder="Vault decryption key"
-                    required
-                    delay={0.15}
-                    icon={Lock}
-                    highlight
-                />
 
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -499,7 +487,6 @@ function RegisterFormContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [masterPassword, setMasterPassword] = useState('');
     const { signup } = useAuth();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -513,7 +500,7 @@ function RegisterFormContent() {
 
         try {
             setLoading(true);
-            await signup(email, password, masterPassword);
+            await signup(email, password);
             toast.success('Account created successfully!');
             navigate('/');
         } catch (err) {
@@ -561,37 +548,6 @@ function RegisterFormContent() {
                         compact
                     />
                 </div>
-
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.15 }}
-                    className="pt-2"
-                    style={{ borderTop: '1px solid var(--border-color)' }}
-                >
-                    <div
-                        className="flex items-center gap-2 p-3 rounded-lg mb-3"
-                        style={{
-                            backgroundColor: 'var(--warning-bg)',
-                            border: '1px solid var(--warning-border)'
-                        }}
-                    >
-                        <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--warning-text)' }} />
-                        <p className="text-xs" style={{ color: 'var(--warning-text)' }}>Master Password cannot be recovered!</p>
-                    </div>
-
-                    <AnimatedInput
-                        label="Master Password"
-                        type="password"
-                        value={masterPassword}
-                        onChange={(e) => setMasterPassword(e.target.value)}
-                        required
-                        delay={0}
-                        icon={Lock}
-                        highlight
-                        compact
-                    />
-                </motion.div>
 
                 <motion.div
                     initial={{ opacity: 0 }}
