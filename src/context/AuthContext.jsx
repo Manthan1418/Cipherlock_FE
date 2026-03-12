@@ -3,8 +3,8 @@ import { auth } from "../auth/firebase";
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    sendPasswordResetEmail
 } from "firebase/auth";
 import { deriveKey, exportKey, importKey } from "../crypto/vaultCrypto";
 
@@ -134,6 +134,10 @@ export function AuthProvider({ children }) {
         return signOut(auth);
     }
 
+    function resetPassword(email) {
+        return sendPasswordResetEmail(auth, email);
+    }
+
     // ==========================================
     // BIOMETRIC AUTH METHODS
     // ==========================================
@@ -203,6 +207,7 @@ export function AuthProvider({ children }) {
         signup,
         login,
         logout,
+        resetPassword,
         enableBiometrics,
         loginWithBiometrics
     };

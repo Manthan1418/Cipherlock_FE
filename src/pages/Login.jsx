@@ -298,9 +298,10 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
 function LoginFormContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, setTwoFactorVerified, loginWithBiometrics } = useAuth();
+    const { login, setTwoFactorVerified, loginWithBiometrics, resetPassword } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showTwoFactor, setShowTwoFactor] = useState(false);
+    const [showReset, setShowReset] = useState(false);
     const [twoFactorCode, setTwoFactorCode] = useState('');
     const navigate = useNavigate();
 
@@ -341,6 +342,21 @@ function LoginFormContent() {
             console.error('Biometric authentication cancelled or failed:', err);
             // Catch silently and fall back to password login.
             // No toast.error is displayed to avoid technical WebAuthn errors on mobile.
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleResetPassword(e) {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            await resetPassword(email);
+            toast.success('Password reset email sent! Check your inbox.');
+            setShowReset(false);
+        } catch (err) {
+            console.error('Password reset failed:', err);
+            toast.error(err.message || 'Failed to send reset email.');
         } finally {
             setLoading(false);
         }
@@ -421,6 +437,43 @@ function LoginFormContent() {
     }
 
 
+    if (showReset) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6"
+            >
+                <div className="text-center">
+                    <div className="relative inline-block">
+                        <Lock className="mx-auto h-12 w-12 text-indigo-400" />
+                    </div>
+                    <h2 className="mt-4 text-2xl font-bold gradient-text">Reset Password</h2>
+                    <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Enter your email to receive a reset link.</p>
+                </div>
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                    <AnimatedInput
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                        delay={0.05}
+                    />
+                    <AnimatedButton loading={loading}>Send Reset Link</AnimatedButton>
+                    <button
+                        type="button"
+                        onClick={() => setShowReset(false)}
+                        className="w-full text-sm mt-3 hover:underline text-center text-indigo-400"
+                    >
+                        Back to Login
+                    </button>
+                </form>
+            </motion.div>
+        );
+    }
+
     return (
         <motion.div className="space-y-5">
             <div className="text-center">
@@ -440,14 +493,25 @@ function LoginFormContent() {
                     required
                     delay={0.05}
                 />
-                <AnimatedInput
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    delay={0.1}
-                />
+                <div className="flex flex-col gap-1">
+                    <AnimatedInput
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        delay={0.1}
+                    />
+                    <div className="text-right mt-1">
+                        <button
+                            type="button"
+                            onClick={() => setShowReset(true)}
+                            className="text-xs hover:underline text-indigo-400 transition-colors"
+                        >
+                            Forgot Password?
+                        </button>
+                    </div>
+                </div>
 
                 <motion.div
                     initial={{ opacity: 0 }}
