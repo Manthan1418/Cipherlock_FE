@@ -298,6 +298,7 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
 function LoginFormContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const { login, setTwoFactorVerified, loginWithBiometrics, resetPassword } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showTwoFactor, setShowTwoFactor] = useState(false);
@@ -306,6 +307,14 @@ function LoginFormContent() {
     const navigate = useNavigate();
 
     const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+
+    useEffect(() => {
+        const savedEmail = localStorage.getItem('cipherlock_remembered_email');
+        if (savedEmail) {
+            setEmail(savedEmail);
+            setRememberMe(true);
+        }
+    }, []);
 
     useEffect(() => {
         async function checkAvailability() {
@@ -367,6 +376,13 @@ function LoginFormContent() {
         try {
             setLoading(true);
             await login(email, password);
+            
+            if (rememberMe) {
+                localStorage.setItem('cipherlock_remembered_email', email);
+            } else {
+                localStorage.removeItem('cipherlock_remembered_email');
+            }
+            
             const statusRes = await api.get('/auth/2fa/status');
 
             if (statusRes.data.enabled) {
@@ -502,7 +518,18 @@ function LoginFormContent() {
                         required
                         delay={0.1}
                     />
-                    <div className="text-right mt-1">
+                    <div className="flex items-center justify-between mt-1">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                className="form-checkbox h-4 w-4 text-indigo-500 rounded border-gray-600 bg-gray-800 focus:ring-indigo-500 focus:ring-offset-gray-900 transition duration-150 ease-in-out cursor-pointer"
+                            />
+                            <span className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                                Remember me
+                            </span>
+                        </label>
                         <button
                             type="button"
                             onClick={() => setShowReset(true)}
