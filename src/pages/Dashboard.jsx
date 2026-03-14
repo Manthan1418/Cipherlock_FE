@@ -3,19 +3,21 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { decryptData } from '../crypto/vaultCrypto';
-import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Shield, Key, AlertTriangle, CheckCircle, XCircle, Edit } from 'lucide-react';
+import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Shield, Key, AlertTriangle, CheckCircle, XCircle, Edit, Search } from 'lucide-react';
 import PasswordCard from '../components/PasswordCard';
 import { toast } from 'react-hot-toast';
-// import zxcvbn from 'zxcvbn'; // Deferred import
+import { getCategoryStyle } from '../pages/AddPassword';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 
 export default function Dashboard() {
     const [passwords, setPasswords] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
     const { dbKey, enableBiometrics } = useAuth();
-    const [decryptedCache, setDecryptedCache] = useState({}); // simple caching to avoid re-decrypting on every render
-    const [visiblePasswords, setVisiblePasswords] = useState({}); // Toggle visibility per item
+    const [decryptedCache, setDecryptedCache] = useState({});
+    const [visiblePasswords, setVisiblePasswords] = useState({});
 
 
 
@@ -159,6 +161,28 @@ export default function Dashboard() {
         }));
     }
 
+    // Derive categories present in vault for the filter bar
+    const categories = useMemo(() => {
+        const cats = [...new Set(passwords.map(p => p.category || 'General'))];
+        return cats.sort();
+    }, [passwords]);
+
+    const filteredPasswords = useMemo(() => {
+        let result = passwords;
+        if (activeCategory !== 'All') {
+            result = result.filter(p => (p.category || 'General') === activeCategory);
+        }
+        if (searchQuery.trim() !== '') {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(p => 
+                (p.site && String(p.site).toLowerCase().includes(query)) ||
+                (p.username && String(p.username).toLowerCase().includes(query)) ||
+                (p.category && String(p.category).toLowerCase().includes(query))
+            );
+        }
+        return result;
+    }, [passwords, activeCategory, searchQuery]);
+
     if (!dbKey) {
         return (
             <div className="flex flex-col items-center justify-center h-64 glass rounded-2xl p-8 glow">
@@ -202,7 +226,6 @@ export default function Dashboard() {
                 <div className="text-center py-16 glass rounded-2xl glow fade-in">
                     <Key className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
                     <p className="text-lg mb-2" style={{ color: 'var(--text-secondary)' }}>Your vault is empty.</p>
-
                     <Link to="/add" className="text-indigo-400 hover:text-indigo-300 inline-flex items-center hover:underline transition-colors">
                         <Plus className="w-4 h-4 mr-1" />
                         Add your first password
@@ -210,10 +233,69 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <>
+                    {/* Search and Category Filter Section */}
+                    <div className="mb-6 fade-in space-y-4">
+                        {/* Search Bar */}
+                        <div className="relative max-w-full sm:max-w-md">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 opacity-50" style={{ color: 'var(--text-secondary)' }} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search by site, username, or category..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                autoCapitalize="none"
+                                className="block w-full pl-10 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 text-sm"
+                                style={{ 
+                                    backgroundColor: 'var(--bg-secondary)',
+                                    borderColor: 'var(--border-color)', 
+                                    color: 'var(--text-primary)' 
+                                }}
+                            />
+                        </div>
+
+                        {/* Category Filter Tab Bar */}
+                        {categories.length > 1 && (
+                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                                {['All', ...categories].map(cat => {
+                                    const isActive = activeCategory === cat;
+                                    const style = cat === 'All' ? null : getCategoryStyle(cat);
+                                    return (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setActiveCategory(cat)}
+                                            className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border"
+                                            style={isActive
+                                                ? {
+                                                    backgroundColor: style ? style.bg : 'rgba(99,102,241,0.25)',
+                                                    color: style ? style.text : '#818cf8',
+                                                    borderColor: style ? style.text : '#818cf8',
+                                                    boxShadow: `0 0 12px ${style ? style.bg : 'rgba(99,102,241,0.3)'}`
+                                                  }
+                                                : {
+                                                    backgroundColor: 'transparent',
+                                                    color: 'var(--text-secondary)',
+                                                    borderColor: 'var(--border-color)'
+                                                  }
+                                            }
+                                        >
+                                            {cat} {cat !== 'All' && <span className="ml-1 opacity-60 text-xs">({passwords.filter(p => (p.category || 'General') === cat).length})</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                     <div className="flex flex-col-reverse lg:flex-row gap-8 items-start fade-in">
                         {/* Cards Grid - Left Side */}
                         <div className="flex-1 w-full grid gap-5 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 stagger-children">
-                            {passwords.map((item, index) => (
+                            {filteredPasswords.length === 0 ? (
+                                <div className="col-span-2 text-center py-12">
+                                    <p style={{ color: 'var(--text-secondary)' }}>No passwords in <strong>{activeCategory}</strong>.</p>
+                                    <Link to="/add" className="text-indigo-400 hover:underline text-sm mt-2 inline-block">Add one</Link>
+                                </div>
+                            ) : filteredPasswords.map((item, index) => (
                                 <div key={item.id} style={{ animationDelay: `${index * 0.1}s` }}>
                                     <PasswordCard
                                         item={item}

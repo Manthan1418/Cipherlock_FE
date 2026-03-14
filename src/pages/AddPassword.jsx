@@ -1,16 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { encryptData, decryptData } from '../crypto/vaultCrypto';
 import api from '../api/axios';
-import { Lock, Save, RefreshCw, ChevronDown, ChevronUp, Shield, Sparkles } from 'lucide-react';
+import { Lock, Save, RefreshCw, ChevronDown, ChevronUp, Shield, Sparkles, Tag, Plus, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+
+const PRESET_CATEGORIES = ['General', 'Work', 'Social', 'Banking', 'Gaming', 'Shopping', 'Email', 'Other'];
+
+const CATEGORY_COLORS = {
+    General:  { bg: 'rgba(99,102,241,0.15)',  text: '#818cf8' },
+    Work:     { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa' },
+    Social:   { bg: 'rgba(236,72,153,0.15)',  text: '#f472b6' },
+    Banking:  { bg: 'rgba(16,185,129,0.15)',  text: '#34d399' },
+    Gaming:   { bg: 'rgba(139,92,246,0.15)',  text: '#a78bfa' },
+    Shopping: { bg: 'rgba(245,158,11,0.15)',  text: '#fbbf24' },
+    Email:    { bg: 'rgba(249,115,22,0.15)',  text: '#fb923c' },
+    Other:    { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
+};
+
+function getCategoryStyle(cat) {
+    return CATEGORY_COLORS[cat] || { bg: 'rgba(99,102,241,0.15)', text: '#818cf8' };
+}
+
+export { PRESET_CATEGORIES, getCategoryStyle };
 
 export default function AddPassword() {
     const [site, setSite] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [category, setCategory] = useState('General');
     const [loading, setLoading] = useState(false);
+    const [customCategories, setCustomCategories] = useState([]);
+    const [showNewCategory, setShowNewCategory] = useState(false);
+    const [newCategoryInput, setNewCategoryInput] = useState('');
 
     // Generator State
     const [showGenerator, setShowGenerator] = useState(false);
@@ -20,10 +43,19 @@ export default function AddPassword() {
     const [includeNumbers, setIncludeNumbers] = useState(true);
     const [includeSymbols, setIncludeSymbols] = useState(true);
 
-    const { dbKey } = useAuth();
+    const { dbKey, currentUser } = useAuth();
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
+
+    // Load custom categories from localStorage on mount
+    useEffect(() => {
+        if (!currentUser) return;
+        const stored = localStorage.getItem(`cipherlock_categories_${currentUser.uid}`);
+        if (stored) {
+            try { setCustomCategories(JSON.parse(stored)); } catch {}
+        }
+    }, [currentUser]);
 
     useEffect(() => {
         if (isEditing && dbKey) {
@@ -31,16 +63,35 @@ export default function AddPassword() {
         }
     }, [id, dbKey]);
 
+    function saveCustomCategories(list) {
+        if (!currentUser) return;
+        setCustomCategories(list);
+        localStorage.setItem(`cipherlock_categories_${currentUser.uid}`, JSON.stringify(list));
+    }
+
+    function handleAddCustomCategory() {
+        const trimmed = newCategoryInput.trim();
+        if (!trimmed) return;
+        const allCats = [...PRESET_CATEGORIES, ...customCategories];
+        if (allCats.map(c => c.toLowerCase()).includes(trimmed.toLowerCase())) {
+            setCategory(trimmed);
+        } else {
+            const updated = [...customCategories, trimmed];
+            saveCustomCategories(updated);
+            setCategory(trimmed);
+        }
+        setNewCategoryInput('');
+        setShowNewCategory(false);
+    }
+
     async function fetchPasswordDetails() {
         try {
             setLoading(true);
             const res = await api.get(`/vault/${id}`);
             const item = res.data;
-
             setSite(item.site);
             setUsername(item.username);
-
-            // Decrypt the password
+            setCategory(item.category || 'General');
             try {
                 const plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
                 setPassword(plaintext);
@@ -48,7 +99,6 @@ export default function AddPassword() {
                 console.error("Decryption failed", decryptErr);
                 toast.error("Couldn't decrypt this entry — your session key may have changed.");
             }
-
         } catch (error) {
             console.error("Failed to fetch password details", error);
             toast.error("Couldn't load that entry. It may have been deleted.");
@@ -77,7 +127,8 @@ export default function AddPassword() {
                 site,
                 username,
                 encryptedPassword: ciphertext,
-                iv: iv
+                iv: iv,
+                category: category || 'General',
             };
 
             if (isEditing) {
@@ -162,20 +213,57 @@ export default function AddPassword() {
 
 
                 <div className="fade-in" style={{ animationDelay: '0.15s' }}>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Username</label>
-                    <input
-                        type="text"
-                        required
-                        className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
-                        style={{
-                            backgroundColor: 'var(--bg-input)',
-                            color: 'var(--text-primary)',
-                            borderColor: 'var(--border-input)'
-                        }}
-                        placeholder="email@example.com"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                        <Tag className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />Category
+                    </label>
+
+                    {!showNewCategory ? (
+                        <select
+                            value={category}
+                            onChange={(e) => {
+                                if (e.target.value === '__new__') {
+                                    setShowNewCategory(true);
+                                } else {
+                                    setCategory(e.target.value);
+                                }
+                            }}
+                            className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all cursor-pointer"
+                            style={{
+                                backgroundColor: 'var(--bg-input)',
+                                color: 'var(--text-primary)',
+                                borderColor: 'var(--border-input)'
+                            }}
+                        >
+                            {[...PRESET_CATEGORIES, ...customCategories].map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                            <option value="__new__">+ New category…</option>
+                        </select>
+                    ) : (
+                        <div className="flex gap-2">
+                            <input
+                                autoFocus
+                                type="text"
+                                value={newCategoryInput}
+                                onChange={(e) => setNewCategoryInput(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomCategory(); } if (e.key === 'Escape') { setShowNewCategory(false); setNewCategoryInput(''); } }}
+                                placeholder="e.g. Finance, Travel..."
+                                className="flex-1 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                                style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', borderColor: 'var(--border-input)' }}
+                            />
+                            <button type="button" onClick={handleAddCustomCategory}
+                                className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all flex items-center gap-1 font-medium text-sm"
+                            >
+                                <Plus className="w-4 h-4" /> Add
+                            </button>
+                            <button type="button" onClick={() => { setShowNewCategory(false); setNewCategoryInput(''); }}
+                                className="px-3 py-3 rounded-xl transition-all border"
+                                style={{ borderColor: 'var(--border-input)', color: 'var(--text-secondary)' }}
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
 
