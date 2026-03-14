@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useState } from "react";
 import { auth } from "../auth/firebase";
+import { biometricsApi } from '../api/axios';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     onAuthStateChanged,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    signOut
 } from "firebase/auth";
 import { deriveKey, exportKey, importKey } from "../crypto/vaultCrypto";
 
@@ -50,6 +52,21 @@ export function AuthProvider({ children }) {
             }
         };
         loadKey();
+    }, []);
+
+    // Wake up the Render backend (biometrics) to mitigate cold starts
+    useEffect(() => {
+        const wakeUpBiometrics = async () => {
+            try {
+                // Fire and forget - we don't need to wait for or handle the response
+                biometricsApi.get('/biometrics/health');
+                console.log("Sent wake-up ping to biometrics service...");
+            } catch (e) {
+                // Ignore errors since this is just a wake-up call
+                console.warn("Wake-up ping failed (expected if service is starting):", e);
+            }
+        };
+        wakeUpBiometrics();
     }, []);
 
     // Check 2FA Status when user logs in
