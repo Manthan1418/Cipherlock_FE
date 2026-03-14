@@ -47,10 +47,29 @@ function ThemedToaster() {
     return (
         <Toaster
             position="top-center"
+            gutter={10}
             toastOptions={{
+                duration: 4000,
                 style: {
-                    background: isDark ? '#333' : '#fff',
-                    color: isDark ? '#fff' : '#0f172a',
+                    background: isDark ? '#1e1e2e' : '#ffffff',
+                    color: isDark ? '#e2e8f0' : '#0f172a',
+                    border: isDark ? '1px solid rgba(99,102,241,0.25)' : '1px solid rgba(99,102,241,0.15)',
+                    borderRadius: '12px',
+                    boxShadow: isDark
+                        ? '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.1)'
+                        : '0 8px 24px rgba(0,0,0,0.08)',
+                    padding: '12px 16px',
+                    fontWeight: '500',
+                    fontSize: '14px',
+                    maxWidth: '380px',
+                },
+                success: {
+                    duration: 3500,
+                    iconTheme: { primary: '#10b981', secondary: isDark ? '#1e1e2e' : '#fff' },
+                },
+                error: {
+                    duration: 5000,
+                    iconTheme: { primary: '#ef4444', secondary: isDark ? '#1e1e2e' : '#fff' },
                 },
             }}
         />

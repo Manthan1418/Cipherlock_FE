@@ -26,7 +26,7 @@ export default function TwoFactorSetup() {
             }
         } catch (err) {
             console.error(err);
-            toast.error('Failed to fetch 2FA status');
+            toast.error('Could not load your 2FA settings. Please refresh.');
             setLoading(false);
         }
     }
@@ -39,14 +39,14 @@ export default function TwoFactorSetup() {
             setLoading(false);
         } catch (err) {
             console.error(err);
-            toast.error('Failed to generate 2FA secret');
+            toast.error('Could not generate a 2FA secret. Please try again.');
             setLoading(false);
         }
     }
 
     async function handleVerify() {
         if (!verificationCode || verificationCode.length !== 6) {
-            toast.error('Please enter a valid 6-digit code');
+            toast.error('Enter the 6-digit code from your authenticator app.');
             return;
         }
 
@@ -57,30 +57,52 @@ export default function TwoFactorSetup() {
                 code: verificationCode
             });
             setIsEnabled(true);
-            toast.success('Two-factor authentication enabled!');
+            toast.success('Two-factor authentication is now active!');
         } catch (err) {
             console.error(err);
-            toast.error('Invalid code. Please try again.');
+            toast.error('Code is incorrect — please try again with a fresh code from your app.');
         } finally {
             setVerifying(false);
         }
     }
 
     async function handleDisable() {
-        if (!confirm('Are you sure you want to disable 2FA? Your account will be less secure.')) return;
-
-        try {
-            setLoading(true);
-            await api.post('/auth/2fa/disable');
-            setIsEnabled(false);
-            setSecretData(null);
-            generateSecret(); // Generate new secret for next time
-            toast.success('Two-factor authentication disabled');
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to disable 2FA');
-            setLoading(false);
-        }
+        toast(
+            (t) => (
+                <span style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <span>Disable 2FA? Your account will be less secure without it.</span>
+                    <span style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={() => toast.dismiss(t.id)}
+                            style={{ padding: '4px 12px', borderRadius: '8px', background: 'transparent', border: '1px solid currentColor', cursor: 'pointer', fontSize: '13px' }}
+                        >
+                            Keep 2FA
+                        </button>
+                        <button
+                            onClick={async () => {
+                                toast.dismiss(t.id);
+                                try {
+                                    setLoading(true);
+                                    await api.post('/auth/2fa/disable');
+                                    setIsEnabled(false);
+                                    setSecretData(null);
+                                    generateSecret();
+                                    toast.success('Two-factor authentication has been disabled.');
+                                } catch (err) {
+                                    console.error(err);
+                                    toast.error('Could not disable 2FA. Please try again.');
+                                    setLoading(false);
+                                }
+                            }}
+                            style={{ padding: '4px 12px', borderRadius: '8px', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                        >
+                            Disable
+                        </button>
+                    </span>
+                </span>
+            ),
+            { duration: 8000 }
+        );
     }
 
     if (loading) {
@@ -166,7 +188,7 @@ export default function TwoFactorSetup() {
                                             <button
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(secretData.secret);
-                                                    toast.success('Copied to clipboard');
+                                                    toast.success('Secret key copied to clipboard!');
                                                 }}
                                                 className="p-3 hover:bg-indigo-500/20 rounded-xl text-gray-400 hover:text-indigo-400 transition-all flex-shrink-0"
                                             >

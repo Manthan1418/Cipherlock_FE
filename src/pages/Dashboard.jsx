@@ -79,13 +79,10 @@ export default function Dashboard() {
         try {
             const res = await api.get('/vault');
             setPasswords(res.data);
-            // Decrypt immediately or lazy load? 
-            // Better to lazy load or decrypt all at once if list is small. 
-            // Let's decrypt all valid ones now.
             await decryptAll(res.data);
         } catch (error) {
             console.error("Failed to fetch vault", error.response?.data || error.message);
-            toast.error("Failed to load vault items");
+            toast.error("Couldn't load your vault. Check your connection and try again.");
         } finally {
             setLoading(false);
         }
@@ -114,20 +111,45 @@ export default function Dashboard() {
     }
 
     async function handleDelete(id) {
-        if (!confirm("Are you sure you want to delete this password?")) return;
-        try {
-            await api.delete(`/vault/${id}`);
-            setPasswords(prev => prev.filter(p => p.id !== id));
-            toast.success("Password deleted");
-        } catch (error) {
-            console.error("Failed to delete", error);
-            toast.error("Failed to delete password");
-        }
+        const item = passwords.find(p => p.id === id);
+        const siteName = item?.site ? `"${item.site}"` : 'this password';
+        toast(
+            (t) => (
+                <span style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <span>Delete {siteName}? This cannot be undone.</span>
+                    <span style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={() => toast.dismiss(t.id)}
+                            style={{ padding: '4px 12px', borderRadius: '8px', background: 'transparent', border: '1px solid currentColor', cursor: 'pointer', fontSize: '13px' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={async () => {
+                                toast.dismiss(t.id);
+                                try {
+                                    await api.delete(`/vault/${id}`);
+                                    setPasswords(prev => prev.filter(p => p.id !== id));
+                                    toast.success(`${item?.site || 'Password'} deleted.`);
+                                } catch (error) {
+                                    console.error("Failed to delete", error);
+                                    toast.error("Couldn't delete this password. Please try again.");
+                                }
+                            }}
+                            style={{ padding: '4px 12px', borderRadius: '8px', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                        >
+                            Delete
+                        </button>
+                    </span>
+                </span>
+            ),
+            { duration: 8000 }
+        );
     }
 
-    function copyToClipboard(text) {
+    function copyToClipboard(text, label = 'Password') {
         navigator.clipboard.writeText(text);
-        toast.success("Copied to clipboard!");
+        toast.success(`${label} copied to clipboard!`);
     }
 
     function toggleVisibility(id) {

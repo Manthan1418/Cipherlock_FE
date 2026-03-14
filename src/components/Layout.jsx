@@ -56,9 +56,13 @@ export default function Layout({ children }) {
                                 onClick={async () => {
                                     try {
                                         const success = await enableBiometrics();
-                                        if (success) toast.success("Biometrics enabled!");
+                                        if (success) toast.success('Passkey registered! You can now sign in with biometrics.');
                                     } catch (e) {
-                                        toast.error(e.message);
+                                        if (e.name === 'NotAllowedError') {
+                                            toast.error('Passkey setup was cancelled.');
+                                        } else {
+                                            toast.error(e.message || 'Could not enable biometrics. Please try again.');
+                                        }
                                     }
                                 }}
                                 className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"

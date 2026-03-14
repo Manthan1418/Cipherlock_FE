@@ -46,12 +46,12 @@ export default function AddPassword() {
                 setPassword(plaintext);
             } catch (decryptErr) {
                 console.error("Decryption failed", decryptErr);
-                toast.error("Failed to decrypt password");
+                toast.error("Couldn't decrypt this entry — your session key may have changed.");
             }
 
         } catch (error) {
             console.error("Failed to fetch password details", error);
-            toast.error("Failed to load password details");
+            toast.error("Couldn't load that entry. It may have been deleted.");
             navigate('/');
         } finally {
             setLoading(false);
@@ -62,7 +62,7 @@ export default function AddPassword() {
         e.preventDefault();
 
         if (!dbKey) {
-            toast.error('Vault is locked. Only available for this session.');
+            toast.error('Your vault is locked. Please sign out and log in again.');
             return;
         }
 
@@ -82,17 +82,16 @@ export default function AddPassword() {
 
             if (isEditing) {
                 await api.put(`/vault/${id}`, payload);
-                toast.success('Password updated successfully!');
+                toast.success('Credentials updated successfully!');
             } else {
                 await api.post('/vault', payload);
-                toast.success('Password saved successfully!');
+                toast.success(`Saved ${site ? `"${site}"` : 'credentials'} to your vault!`);
             }
 
             navigate('/');
         } catch (err) {
             console.error("Full Backend Error:", err.response?.data || err.message);
-            const detail = err.response?.data?.details || err.response?.data?.error || err.message;
-            toast.error(`Failed to save password: ${detail}`);
+            toast.error('Failed to save. Please try again or check your connection.');
         }
         setLoading(false);
     }
@@ -110,7 +109,7 @@ export default function AddPassword() {
         if (includeSymbols) charset += symbols;
 
         if (charset === "") {
-            toast.error("Please select at least one character type");
+            toast.error("Select at least one character type to generate a password.");
             return;
         }
 
@@ -123,7 +122,7 @@ export default function AddPassword() {
         }
 
         setPassword(newPassword);
-        toast.success("Password Generated!");
+        toast.success('Strong password generated and filled!');
     }
 
     if (!dbKey) {

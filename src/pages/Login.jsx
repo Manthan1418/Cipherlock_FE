@@ -342,15 +342,32 @@ function LoginFormContent() {
     async function handleBiometricLogin() {
         try {
             setLoading(true);
-            const success = await loginWithBiometrics(email); // Pass email if available
+            const success = await loginWithBiometrics(email);
             if (success) {
-                toast.success('Biometric Login Successful!');
+                toast.success('Signed in with your passkey!');
                 navigate('/');
             }
         } catch (err) {
             console.error('Biometric authentication cancelled or failed:', err);
-            // Catch silently and fall back to password login.
-            // No toast.error is displayed to avoid technical WebAuthn errors on mobile.
+            const name = err?.name || '';
+            const msg = err?.message || '';
+
+            if (name === 'NotAllowedError') {
+                // User dismissed the browser prompt
+                toast.error('Passkey sign-in was cancelled.');
+            } else if (
+                name === 'NotFoundError' ||
+                msg.toLowerCase().includes('no credentials') ||
+                msg.toLowerCase().includes('no passkey') ||
+                msg.toLowerCase().includes('not found')
+            ) {
+                // No passkey registered on this device / account
+                toast.error('No passkey found for this account. Please sign in with your password.');
+            } else if (name === 'SecurityError') {
+                toast.error('Passkey sign-in failed due to a security error. Try again.');
+            } else {
+                toast.error('Passkey sign-in failed. Please use your password instead.');
+            }
         } finally {
             setLoading(false);
         }
@@ -358,14 +375,23 @@ function LoginFormContent() {
 
     async function handleResetPassword(e) {
         e.preventDefault();
+        if (!email) {
+            toast.error('Please enter your email address first.');
+            return;
+        }
         try {
             setLoading(true);
             await resetPassword(email);
-            toast.success('Password reset email sent! Check your inbox.');
+            toast.success('Reset link sent! Check your inbox (and spam folder).');
             setShowReset(false);
         } catch (err) {
             console.error('Password reset failed:', err);
-            toast.error(err.message || 'Failed to send reset email.');
+            const code = err.code;
+            if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+                toast.error('No account found with that email address.');
+            } else {
+                toast.error('Could not send reset email. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -396,7 +422,18 @@ function LoginFormContent() {
             navigate('/');
         } catch (err) {
             console.error(err);
-            toast.error('Failed to log in. Check your credentials.');
+            const code = err.code;
+            if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+                toast.error('Incorrect password. Please try again.');
+            } else if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+                toast.error('No account found with that email.');
+            } else if (code === 'auth/too-many-requests') {
+                toast.error('Too many failed attempts. Please wait a moment.');
+            } else if (code === 'auth/network-request-failed') {
+                toast.error('Network error. Please check your connection.');
+            } else {
+                toast.error('Sign-in failed. Please check your credentials.');
+            }
             setLoading(false);
         }
     }
@@ -407,11 +444,11 @@ function LoginFormContent() {
             setLoading(true);
             await api.post('/auth/2fa/verify', { code: twoFactorCode });
             setTwoFactorVerified(true);
-            toast.success('Verified!');
+            toast.success('Identity verified! Welcome back.');
             navigate('/');
         } catch (err) {
             console.error(err);
-            toast.error('Invalid 2FA Code');
+            toast.error('Incorrect code — please check your authenticator app.');
             setLoading(false);
         }
     }
@@ -592,11 +629,18 @@ function RegisterFormContent() {
         try {
             setLoading(true);
             await signup(email, password);
-            toast.success('Account created successfully!');
+            toast.success('Account created! Your vault is ready.');
             navigate('/');
         } catch (err) {
             console.error(err);
-            toast.error('Failed to create an account.');
+            const code = err.code;
+            if (code === 'auth/email-already-in-use') {
+                toast.error('An account with this email already exists.');
+            } else if (code === 'auth/weak-password') {
+                toast.error('Password is too weak. Use at least 6 characters.');
+            } else {
+                toast.error('Could not create account. Please try again.');
+            }
         }
         setLoading(false);
     }
