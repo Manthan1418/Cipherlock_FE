@@ -58,11 +58,6 @@ function ThemedToaster() {
 }
 
 function AppContent() {
-    useEffect(() => {
-        // Optional UX Optimization: background warm-up request
-        fetch('/api/health').catch(() => { });
-    }, []);
-
     return (
         <>
             <ThemedToaster />
