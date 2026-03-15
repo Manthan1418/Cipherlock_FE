@@ -52,19 +52,8 @@ export default function Layout({ children }) {
                             >
                                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                             </button>
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        const success = await enableBiometrics();
-                                        if (success) toast.success('Passkey registered! You can now sign in with biometrics.');
-                                    } catch (e) {
-                                        if (e.name === 'NotAllowedError') {
-                                            toast.error('Passkey setup was cancelled.');
-                                        } else {
-                                            toast.error(e.message || 'Could not enable biometrics. Please try again.');
-                                        }
-                                    }
-                                }}
+                            <Link
+                                to="/biometrics"
                                 className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
                                 style={{ color: 'var(--text-secondary)' }}
                                 onMouseEnter={(e) => {
@@ -75,10 +64,10 @@ export default function Layout({ children }) {
                                     e.currentTarget.style.backgroundColor = 'transparent';
                                     e.currentTarget.style.color = 'var(--text-secondary)';
                                 }}
-                                title="Enable Biometrics"
+                                title="Biometric Settings"
                             >
                                 <Fingerprint className="w-5 h-5" />
-                            </button>
+                            </Link>
                             <Link
                                 to="/2fa"
                                 className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
