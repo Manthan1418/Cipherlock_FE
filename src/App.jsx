@@ -9,7 +9,6 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AddPassword from './pages/AddPassword';
 import TwoFactorSetup from './pages/TwoFactorSetup';
-import BiometricsSetup from './pages/BiometricsSetup';
 import Layout from './components/Layout';
 
 const ProtectedRoute = ({ children }) => {
@@ -122,14 +121,6 @@ function AppContent() {
                     <ProtectedRoute>
                         <Layout>
                             <TwoFactorSetup />
-                        </Layout>
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/biometrics" element={
-                    <ProtectedRoute>
-                        <Layout>
-                            <BiometricsSetup />
                         </Layout>
                     </ProtectedRoute>
                 } />
