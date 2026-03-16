@@ -174,7 +174,7 @@ export default function Dashboard() {
         }
         if (searchQuery.trim() !== '') {
             const query = searchQuery.toLowerCase();
-            result = result.filter(p => 
+            result = result.filter(p =>
                 (p.site && String(p.site).toLowerCase().includes(query)) ||
                 (p.username && String(p.username).toLowerCase().includes(query)) ||
                 (p.category && String(p.category).toLowerCase().includes(query))
@@ -247,10 +247,10 @@ export default function Dashboard() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 autoCapitalize="none"
                                 className="block w-full pl-10 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300 text-sm"
-                                style={{ 
+                                style={{
                                     backgroundColor: 'var(--bg-secondary)',
-                                    borderColor: 'var(--border-color)', 
-                                    color: 'var(--text-primary)' 
+                                    borderColor: 'var(--border-color)',
+                                    color: 'var(--text-primary)'
                                 }}
                             />
                         </div>
@@ -272,12 +272,12 @@ export default function Dashboard() {
                                                     color: style ? style.text : '#818cf8',
                                                     borderColor: style ? style.text : '#818cf8',
                                                     boxShadow: `0 0 12px ${style ? style.bg : 'rgba(99,102,241,0.3)'}`
-                                                  }
+                                                }
                                                 : {
                                                     backgroundColor: 'transparent',
                                                     color: 'var(--text-secondary)',
                                                     borderColor: 'var(--border-color)'
-                                                  }
+                                                }
                                             }
                                         >
                                             {cat} {cat !== 'All' && <span className="ml-1 opacity-60 text-xs">({passwords.filter(p => (p.category || 'General') === cat).length})</span>}

@@ -9,14 +9,14 @@ import { toast } from 'react-hot-toast';
 const PRESET_CATEGORIES = ['General', 'Work', 'Social', 'Banking', 'Gaming', 'Shopping', 'Email', 'Other'];
 
 const CATEGORY_COLORS = {
-    General:  { bg: 'rgba(99,102,241,0.15)',  text: '#818cf8' },
-    Work:     { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa' },
-    Social:   { bg: 'rgba(236,72,153,0.15)',  text: '#f472b6' },
-    Banking:  { bg: 'rgba(16,185,129,0.15)',  text: '#34d399' },
-    Gaming:   { bg: 'rgba(139,92,246,0.15)',  text: '#a78bfa' },
-    Shopping: { bg: 'rgba(245,158,11,0.15)',  text: '#fbbf24' },
-    Email:    { bg: 'rgba(249,115,22,0.15)',  text: '#fb923c' },
-    Other:    { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
+    General: { bg: 'rgba(99,102,241,0.15)', text: '#818cf8' },
+    Work: { bg: 'rgba(59,130,246,0.15)', text: '#60a5fa' },
+    Social: { bg: 'rgba(236,72,153,0.15)', text: '#f472b6' },
+    Banking: { bg: 'rgba(16,185,129,0.15)', text: '#34d399' },
+    Gaming: { bg: 'rgba(139,92,246,0.15)', text: '#a78bfa' },
+    Shopping: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24' },
+    Email: { bg: 'rgba(249,115,22,0.15)', text: '#fb923c' },
+    Other: { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
 };
 
 function getCategoryStyle(cat) {
@@ -53,7 +53,7 @@ export default function AddPassword() {
         if (!currentUser) return;
         const stored = localStorage.getItem(`cipherlock_categories_${currentUser.uid}`);
         if (stored) {
-            try { setCustomCategories(JSON.parse(stored)); } catch {}
+            try { setCustomCategories(JSON.parse(stored)); } catch { }
         }
     }, [currentUser]);
 
