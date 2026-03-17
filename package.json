@@ -1,8 +1,20 @@
 {
     "name": "cipherlock-fe",
-    "private": true,
     "version": "0.0.0",
+    "private": true,
+    "description": "",
+    "homepage": "https://github.com/Manthan1418/Cipherlock_FE#readme",
+    "bugs": {
+        "url": "https://github.com/Manthan1418/Cipherlock_FE/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Manthan1418/Cipherlock_FE.git"
+    },
+    "license": "ISC",
+    "author": "",
     "type": "module",
+    "main": "postcss.config.js",
     "scripts": {
         "dev": "vite",
         "build": "vite build",
@@ -12,6 +24,8 @@
     "dependencies": {
         "@radix-ui/react-label": "^2.1.8",
         "@radix-ui/react-slot": "^1.2.4",
+        "@react-three/drei": "^10.7.7",
+        "@react-three/fiber": "^9.5.0",
         "@simplewebauthn/browser": "^13.2.2",
         "axios": "^1.4.0",
         "class-variance-authority": "^0.7.1",
@@ -30,6 +44,7 @@
         "recharts": "^3.7.0",
         "tailwind-merge": "^3.4.0",
         "tailwindcss-animate": "^1.0.7",
+        "three": "^0.183.2",
         "zxcvbn": "^4.4.2"
     },
     "devDependencies": {

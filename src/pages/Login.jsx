@@ -211,13 +211,14 @@ function AnimatedButton({ children, loading, disabled, type = 'submit', onClick 
             type={type}
             disabled={disabled || loading}
             onClick={onClick}
-            className="relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
+            className="relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
             style={{
                 '--tw-ring-offset-color': isDark ? '#111827' : '#ffffff'
             }}
             whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
             whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            data-testid={`button-${children?.toString().toLowerCase().replace(/\s+/g, '-') || 'action'}`}
         >
 
             <AnimatePresence mode="wait">
@@ -257,7 +258,7 @@ function AnimatedButton({ children, loading, disabled, type = 'submit', onClick 
 function AnimatedInput({ label, type, value, onChange, placeholder, required, delay = 0, icon: Icon, highlight, compact = false }) {
     return (
         <motion.div
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             transition={{
                 duration: ANIMATION_CONFIG.duration.fade,
@@ -286,6 +287,7 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
                     borderColor: highlight ? 'var(--accent-primary)' : 'var(--border-input)',
                     '--tw-placeholder-color': 'var(--text-muted)'
                 }}
+                data-testid={`input-${label.toLowerCase().replace(/\s+/g, '-')}`}
             />
         </motion.div>
     );
@@ -345,7 +347,7 @@ function LoginFormContent() {
             const success = await loginWithBiometrics(email);
             if (success) {
                 toast.success('Signed in with your passkey!');
-                navigate('/');
+                navigate('/dashboard');
             }
         } catch (err) {
             console.error('Biometric authentication cancelled or failed:', err);
@@ -402,13 +404,11 @@ function LoginFormContent() {
         try {
             setLoading(true);
             await login(email, password);
-            
             if (rememberMe) {
                 localStorage.setItem('cipherlock_remembered_email', email);
             } else {
                 localStorage.removeItem('cipherlock_remembered_email');
             }
-            
             const statusRes = await api.get('/auth/2fa/status');
 
             if (statusRes.data.enabled) {
@@ -419,7 +419,7 @@ function LoginFormContent() {
 
             setTwoFactorVerified(true);
             toast.success('Welcome back!');
-            navigate('/');
+            navigate('/dashboard');
         } catch (err) {
             console.error(err);
             const code = err.code;
@@ -445,7 +445,7 @@ function LoginFormContent() {
             await api.post('/auth/2fa/verify', { code: twoFactorCode });
             setTwoFactorVerified(true);
             toast.success('Identity verified! Welcome back.');
-            navigate('/');
+            navigate('/dashboard');
         } catch (err) {
             console.error(err);
             toast.error('Incorrect code — please check your authenticator app.');
@@ -630,7 +630,7 @@ function RegisterFormContent() {
             setLoading(true);
             await signup(email, password);
             toast.success('Account created! Your vault is ready.');
-            navigate('/');
+            navigate('/dashboard');
         } catch (err) {
             console.error(err);
             const code = err.code;

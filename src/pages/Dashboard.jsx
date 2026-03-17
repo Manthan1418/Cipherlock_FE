@@ -252,6 +252,7 @@ export default function Dashboard() {
                                     borderColor: 'var(--border-color)',
                                     color: 'var(--text-primary)'
                                 }}
+                                data-testid="dashboard-search-input"
                             />
                         </div>
 
@@ -279,6 +280,7 @@ export default function Dashboard() {
                                                     borderColor: 'var(--border-color)'
                                                 }
                                             }
+                                            data-testid={`category-tab-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                                         >
                                             {cat} {cat !== 'All' && <span className="ml-1 opacity-60 text-xs">({passwords.filter(p => (p.category || 'General') === cat).length})</span>}
                                         </button>

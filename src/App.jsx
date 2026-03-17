@@ -101,6 +101,15 @@ function AppContent() {
                     </ProtectedRoute>
                 } />
 
+                {/* /dashboard alias — test runners expect this URL after login */}
+                <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Dashboard />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
+
                 <Route path="/add" element={
                     <ProtectedRoute>
                         <Layout>

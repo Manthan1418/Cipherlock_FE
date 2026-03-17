@@ -34,6 +34,7 @@ export default function AddPassword() {
     const [customCategories, setCustomCategories] = useState([]);
     const [showNewCategory, setShowNewCategory] = useState(false);
     const [newCategoryInput, setNewCategoryInput] = useState('');
+    const [siteError, setSiteError] = useState('');
 
     // Generator State
     const [showGenerator, setShowGenerator] = useState(false);
@@ -110,6 +111,13 @@ export default function AddPassword() {
 
     async function handleSubmit(e) {
         e.preventDefault();
+
+        // Custom validation for Site field (HTML5 required can't be seen by test runners)
+        if (!site.trim()) {
+            setSiteError('Site/App name required');
+            return;
+        }
+        setSiteError('');
 
         if (!dbKey) {
             toast.error('Your vault is locked. Please sign out and log in again.');
@@ -199,15 +207,36 @@ export default function AddPassword() {
                     <input
                         type="text"
                         required
+                         className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
+                        style={{
+                            backgroundColor: 'var(--bg-input)',
+                            color: 'var(--text-primary)',
+                            borderColor: siteError ? '#ef4444' : 'var(--border-input)'
+                        }}
+                        placeholder="e.g. Netflix"
+                        value={site}
+                        onChange={(e) => { setSite(e.target.value); if (e.target.value.trim()) setSiteError(''); }}
+                        data-testid="add-password-site"
+                    />
+                    {siteError && (
+                        <p className="mt-1 text-sm text-red-400" role="alert" data-testid="site-error">{siteError}</p>
+                    )}
+                </div>
+
+                <div className="fade-in" style={{ animationDelay: '0.12s' }}>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Username / Email</label>
+                    <input
+                        type="text"
                         className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none input-animated transition-all"
                         style={{
                             backgroundColor: 'var(--bg-input)',
                             color: 'var(--text-primary)',
                             borderColor: 'var(--border-input)'
                         }}
-                        placeholder="e.g. Netflix"
-                        value={site}
-                        onChange={(e) => setSite(e.target.value)}
+                        placeholder="e.g. user@example.com"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        data-testid="add-password-username"
                     />
                 </div>
 
@@ -280,6 +309,7 @@ export default function AddPassword() {
                         }}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        data-testid="add-password-field"
                     />
                 </div>
 
@@ -394,6 +424,7 @@ export default function AddPassword() {
                         type="submit"
                         disabled={loading}
                         className="w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all btn-glow disabled:opacity-50"
+                        data-testid="add-password-submit"
                     >
                         {loading ? (
                             <span className="flex items-center">
