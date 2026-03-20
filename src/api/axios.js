@@ -3,32 +3,47 @@ import { auth } from '../auth/firebase';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL_MAIN || 'http://localhost:5000/api',
+    timeout: 15000,
 });
 
 export const biometricsApi = axios.create({
     baseURL: import.meta.env.VITE_API_URL_BIO || 'http://localhost:5000/api',
+    timeout: 15000,
 });
 
-api.interceptors.request.use(async (config) => {
-    const user = auth.currentUser;
-    if (user) {
-        const token = await user.getIdToken();
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+let tokenPromise = null;
 
-biometricsApi.interceptors.request.use(async (config) => {
-    const user = auth.currentUser;
-    if (user) {
-        const token = await user.getIdToken();
-        config.headers.Authorization = `Bearer ${token}`;
+async function getCachedIdToken(user) {
+    if (!tokenPromise) {
+        tokenPromise = user.getIdToken().finally(() => {
+            tokenPromise = null;
+        });
     }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+    return tokenPromise;
+}
+
+function attachAuthInterceptor(client) {
+    client.interceptors.request.use(async (config) => {
+        if (config.headers?.Authorization) {
+            return config;
+        }
+
+        const user = auth.currentUser;
+        if (user) {
+            const token = await getCachedIdToken(user);
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        const twoFactorSession = sessionStorage.getItem('twoFactorSession');
+        if (twoFactorSession) {
+            config.headers['X-2FA-Session'] = twoFactorSession;
+        }
+
+        return config;
+    }, (error) => Promise.reject(error));
+}
+
+attachAuthInterceptor(api);
+attachAuthInterceptor(biometricsApi);
 
 export default api;

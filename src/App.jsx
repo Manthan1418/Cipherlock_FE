@@ -1,26 +1,30 @@
-import { useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AddPassword from './pages/AddPassword';
-import TwoFactorSetup from './pages/TwoFactorSetup';
-import Layout from './components/Layout';
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AddPassword = lazy(() => import('./pages/AddPassword'));
+const TwoFactorSetup = lazy(() => import('./pages/TwoFactorSetup'));
+const Layout = lazy(() => import('./components/Layout'));
+
+const AppLoader = () => (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-indigo-500">
+        <svg className="animate-spin h-10 w-10" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    </div>
+);
 
 const ProtectedRoute = ({ children }) => {
     const { currentUser, loading, twoFactorVerified } = useAuth();
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-indigo-500">
-            <svg className="animate-spin h-10 w-10" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-        </div>;
+        return <AppLoader />;
     }
 
     // If not logged in, force login
@@ -78,7 +82,7 @@ function ThemedToaster() {
 
 function AppContent() {
     return (
-        <>
+        <Suspense fallback={<AppLoader />}>
             <ThemedToaster />
 
             <Routes>
@@ -137,7 +141,7 @@ function AppContent() {
                 {/* Catch all - Redirect to Home */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-        </>
+        </Suspense>
     );
 }
 

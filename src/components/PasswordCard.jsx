@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Copy, Trash2, Edit, Eye, EyeOff } from 'lucide-react';
 import { getCategoryStyle } from '../pages/AddPassword';
@@ -116,4 +116,4 @@ const PasswordCard = ({ item, isVisible, decryptedPassword, onToggleVisibility, 
     );
 };
 
-export default PasswordCard;
+export default memo(PasswordCard);

@@ -216,10 +216,9 @@ export default function AddPassword() {
                         placeholder="e.g. Netflix"
                         value={site}
                         onChange={(e) => { setSite(e.target.value); if (e.target.value.trim()) setSiteError(''); }}
-                        data-testid="add-password-site"
                     />
                     {siteError && (
-                        <p className="mt-1 text-sm text-red-400" role="alert" data-testid="site-error">{siteError}</p>
+                        <p className="mt-1 text-sm text-red-400" role="alert">{siteError}</p>
                     )}
                 </div>
 
@@ -236,7 +235,6 @@ export default function AddPassword() {
                         placeholder="e.g. user@example.com"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        data-testid="add-password-username"
                     />
                 </div>
 
@@ -309,7 +307,6 @@ export default function AddPassword() {
                         }}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        data-testid="add-password-field"
                     />
                 </div>
 
@@ -424,7 +421,6 @@ export default function AddPassword() {
                         type="submit"
                         disabled={loading}
                         className="w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all btn-glow disabled:opacity-50"
-                        data-testid="add-password-submit"
                     >
                         {loading ? (
                             <span className="flex items-center">

@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { decryptData } from '../crypto/vaultCrypto';
-import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Shield, Key, AlertTriangle, CheckCircle, XCircle, Edit, Search } from 'lucide-react';
+import { Plus, Loader2, Shield, Key, Search } from 'lucide-react';
 import PasswordCard from '../components/PasswordCard';
 import { toast } from 'react-hot-toast';
 import { getCategoryStyle } from '../pages/AddPassword';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 
 export default function Dashboard() {
@@ -25,8 +25,14 @@ export default function Dashboard() {
     useEffect(() => {
         fetchVault();
         // Preload zxcvbn to avoid delay when rendering the chart
-        import('zxcvbn');
+        void import('zxcvbn');
     }, []);
+
+    useEffect(() => {
+        if (dbKey && passwords.length > 0) {
+            decryptAll(passwords);
+        }
+    }, [dbKey, passwords]);
 
     const [strengthStats, setStrengthStats] = useState({ data: [], weakItems: [] });
 
@@ -81,7 +87,6 @@ export default function Dashboard() {
         try {
             const res = await api.get('/vault');
             setPasswords(res.data);
-            await decryptAll(res.data);
         } catch (error) {
             console.error("Failed to fetch vault", error.response?.data || error.message);
             toast.error("Couldn't load your vault. Check your connection and try again.");
@@ -109,7 +114,7 @@ export default function Dashboard() {
             newCache[res.id] = res.plaintext;
         });
 
-        setDecryptedCache(prev => ({ ...prev, ...newCache }));
+        setDecryptedCache(newCache);
     }
 
     async function handleDelete(id) {
@@ -149,9 +154,18 @@ export default function Dashboard() {
         );
     }
 
-    function copyToClipboard(text, label = 'Password') {
-        navigator.clipboard.writeText(text);
-        toast.success(`${label} copied to clipboard!`);
+    async function copyToClipboard(text, label = 'Password') {
+        if (!text) {
+            toast.error(`${label} is empty.`);
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success(`${label} copied to clipboard!`);
+        } catch {
+            toast.error(`Failed to copy ${label.toLowerCase()}.`);
+        }
     }
 
     function toggleVisibility(id) {
@@ -165,6 +179,15 @@ export default function Dashboard() {
     const categories = useMemo(() => {
         const cats = [...new Set(passwords.map(p => p.category || 'General'))];
         return cats.sort();
+    }, [passwords]);
+
+    const categoryCounts = useMemo(() => {
+        const counts = {};
+        for (const p of passwords) {
+            const category = p.category || 'General';
+            counts[category] = (counts[category] || 0) + 1;
+        }
+        return counts;
     }, [passwords]);
 
     const filteredPasswords = useMemo(() => {
@@ -252,7 +275,6 @@ export default function Dashboard() {
                                     borderColor: 'var(--border-color)',
                                     color: 'var(--text-primary)'
                                 }}
-                                data-testid="dashboard-search-input"
                             />
                         </div>
 
@@ -280,9 +302,8 @@ export default function Dashboard() {
                                                     borderColor: 'var(--border-color)'
                                                 }
                                             }
-                                            data-testid={`category-tab-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                                         >
-                                            {cat} {cat !== 'All' && <span className="ml-1 opacity-60 text-xs">({passwords.filter(p => (p.category || 'General') === cat).length})</span>}
+                                            {cat} {cat !== 'All' && <span className="ml-1 opacity-60 text-xs">({categoryCounts[cat] || 0})</span>}
                                         </button>
                                     );
                                 })}

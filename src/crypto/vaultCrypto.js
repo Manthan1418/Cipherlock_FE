@@ -56,15 +56,14 @@ export const deriveKey = async (password, salt) => {
         },
         keyMaterial,
         { name: "AES-GCM", length: 256 },
-        true, // Key is extractable for session storage persistence
+        false,
         ["encrypt", "decrypt"]
     );
 };
 
 // Export Key for Session Storage
 export const exportKey = async (key) => {
-    const exported = await window.crypto.subtle.exportKey("jwk", key);
-    return JSON.stringify(exported);
+    throw new Error('Key export is disabled for security reasons.');
 };
 
 // Import Key from Session Storage
@@ -74,7 +73,7 @@ export const importKey = async (jsonKey) => {
         "jwk",
         jwk,
         { name: "AES-GCM", length: 256 },
-        true, // extractable
+        false,
         ["encrypt", "decrypt"]
     );
 };

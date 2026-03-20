@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { auth } from "../auth/firebase";
-import { biometricsApi } from '../api/axios';
+import api, { biometricsApi } from '../api/axios';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -8,7 +8,7 @@ import {
     sendPasswordResetEmail,
     signOut
 } from "firebase/auth";
-import { deriveKey, exportKey, importKey } from "../crypto/vaultCrypto";
+import { deriveKey } from "../crypto/vaultCrypto";
 
 const AuthContext = React.createContext();
 
@@ -20,79 +20,41 @@ export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState();
     const [loading, setLoading] = useState(true);
 
-    // We store the Derived Key in memory and SessionStorage (for reloads).
-    // SessionStorage is cleared when the tab is closed, providing a balance of usability and security.
+    // Keep key material in memory only.
     const [dbKey, setDbKey] = useState(null);
     const [twoFactorVerified, _setTwoFactorVerified] = useState(() => {
         return sessionStorage.getItem('twoFactorVerified') === 'true';
     });
 
     // Wrapper that also persists to sessionStorage
-    const setTwoFactorVerified = (value) => {
+    const setTwoFactorVerified = useCallback((value) => {
         _setTwoFactorVerified(value);
         if (value) {
             sessionStorage.setItem('twoFactorVerified', 'true');
         } else {
             sessionStorage.removeItem('twoFactorVerified');
+            sessionStorage.removeItem('twoFactorSession');
         }
-    };
+    }, []);
 
-    // Initialize Key from Session Storage on Mount
-    useEffect(() => {
-        const loadKey = async () => {
-            const storedKey = sessionStorage.getItem('vaultKey');
-            if (storedKey) {
-                try {
-                    const key = await importKey(storedKey);
-                    setDbKey(key);
-                } catch (error) {
-                    console.error("Failed to restore key from session", error);
-                    sessionStorage.removeItem('vaultKey');
-                }
-            }
-        };
-        loadKey();
+    const getKdfSalt = useCallback(async () => {
+        const res = await api.post('/auth/kdf-salt');
+        if (!res?.data?.salt) {
+            throw new Error('Unable to initialize key derivation salt');
+        }
+        return res.data.salt;
     }, []);
 
     // Wake up the Render backend (biometrics) to mitigate cold starts
     useEffect(() => {
-        const wakeUpBiometrics = async () => {
-            try {
-                // Fire and forget - we don't need to wait for or handle the response
-                biometricsApi.get('/biometrics/health');
-                console.log("Sent wake-up ping to biometrics service...");
-            } catch (e) {
-                // Ignore errors since this is just a wake-up call
-                console.warn("Wake-up ping failed (expected if service is starting):", e);
-            }
-        };
-        wakeUpBiometrics();
-    }, []);
+        if (import.meta.env.DEV) return;
 
-    // Check 2FA Status when user logs in
-    useEffect(() => {
-        if (currentUser) {
-            // If already verified this session (e.g. page reload), skip the check
-            if (sessionStorage.getItem('twoFactorVerified') === 'true') {
-                _setTwoFactorVerified(true);
-            } else {
-                check2FAStatus();
-            }
-        } else if (currentUser === null) {
-            // Only clear on confirmed logout (null from onAuthStateChanged),
-            // NOT on initial mount when currentUser is still undefined.
-            setTwoFactorVerified(false);
-        }
-    }, [currentUser]);
+        // Fire and forget in production to reduce initial perceived latency on first biometrics call.
+        void biometricsApi.get('/biometrics/health').catch(() => {});
+    }, []);
 
     async function check2FAStatus() {
         try {
-            // We need to wait a bit for the token to be ready sometimes, or axios interceptor handles it
-            // Assuming api is imported from '../api/axios'
-            // We need to dynamically import or use fetch if circular dependency issues arise.
-            // But api/axios imports auth from firebase.js, not context. So it should be safe.
-            const { default: api } = await import('../api/axios');
-
             const res = await api.get('/auth/2fa/status');
             if (res.data.enabled) {
                 setTwoFactorVerified(false);
@@ -108,58 +70,62 @@ export function AuthProvider({ children }) {
         }
     }
 
-    function signup(email, password) {
-        // In a real flow: Create User -> Generate User Salt -> Store Salt on User Profile -> Derive Key -> Store Key in Memory
-        // MVP: Use Email as salt (Deterministic).
+    // Check 2FA Status when user logs in
+    useEffect(() => {
+        if (currentUser) {
+            // If already verified this session (e.g. page reload), skip the check
+            if (sessionStorage.getItem('twoFactorVerified') === 'true') {
+                _setTwoFactorVerified(true);
+            } else {
+                check2FAStatus();
+            }
+        } else if (currentUser === null) {
+            // Only clear on confirmed logout (null from onAuthStateChanged),
+            // NOT on initial mount when currentUser is still undefined.
+            setTwoFactorVerified(false);
+        }
+    }, [currentUser, setTwoFactorVerified]);
+
+    const signup = useCallback((email, password) => {
         return createUserWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const key = await deriveKey(password, email);
+                const kdfSalt = await getKdfSalt();
+                const key = await deriveKey(password, kdfSalt);
                 setDbKey(key);
-                try {
-                    const exported = await exportKey(key);
-                    sessionStorage.setItem('vaultKey', exported);
-                } catch (e) {
-                    console.error("Failed to save key session", e);
-                }
                 setTwoFactorVerified(true); // New users don't have 2FA yet
                 return cred;
             });
-    }
+    }, [getKdfSalt, setTwoFactorVerified]);
 
-    function login(email, password) {
+    const login = useCallback((email, password) => {
         return signInWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const key = await deriveKey(password, email);
+                const kdfSalt = await getKdfSalt();
+                const key = await deriveKey(password, kdfSalt);
                 setDbKey(key);
-                try {
-                    const exported = await exportKey(key);
-                    sessionStorage.setItem('vaultKey', exported);
-                } catch (e) {
-                    console.error("Failed to save key session", e);
-                }
                 // 2FA status check happens in useEffect
                 return cred;
             });
-    }
+    }, [getKdfSalt]);
 
-    function logout() {
+    const logout = useCallback(() => {
         setDbKey(null);
-        sessionStorage.removeItem('vaultKey');
         sessionStorage.removeItem('lastActiveTime'); // Clear activity timer too
         sessionStorage.removeItem('twoFactorVerified');
+        sessionStorage.removeItem('twoFactorSession');
         setTwoFactorVerified(false);
         return signOut(auth);
-    }
+    }, [setTwoFactorVerified]);
 
-    function resetPassword(email) {
+    const resetPassword = useCallback((email) => {
         return sendPasswordResetEmail(auth, email);
-    }
+    }, []);
 
     // ==========================================
     // BIOMETRIC AUTH METHODS
     // ==========================================
 
-    async function enableBiometrics() {
+    const enableBiometrics = useCallback(async () => {
         if (!currentUser || !dbKey) throw new Error("Must be logged in to enable biometrics");
 
         try {
@@ -167,18 +133,14 @@ export function AuthProvider({ children }) {
             const { default: apiWebAuthn } = await import('../api/webauthn');
             await apiWebAuthn.registerBiometrics();
 
-            // 2. Save exported key to LocalStorage 'biometric_vault_key'
-            const exportedKey = await exportKey(dbKey);
-            localStorage.setItem('biometric_vault_key', exportedKey);
-
             return true;
         } catch (e) {
             console.error(e);
             throw e;
         }
-    }
+    }, [currentUser, dbKey]);
 
-    async function loginWithBiometrics(email = null) {
+    const loginWithBiometrics = useCallback(async (email = null) => {
         try {
             const { default: apiWebAuthn } = await import('../api/webauthn');
 
@@ -191,18 +153,12 @@ export function AuthProvider({ children }) {
                 const { signInWithCustomToken } = await import("firebase/auth");
                 await signInWithCustomToken(auth, result.token);
 
-                // 2. Try to restore Vault Key
-                const bioKey = localStorage.getItem('biometric_vault_key');
-                if (bioKey) {
-                    try {
-                        const key = await importKey(bioKey);
-                        setDbKey(key);
-                        sessionStorage.setItem('vaultKey', bioKey);
-                    } catch (keyError) {
-                        console.error("Failed to restore vault key from storage:", keyError);
-                        // Don't fail the whole login, but user might need to re-enter master password if key is corrupt
-                    }
+                if (result.twoFactorSession) {
+                    sessionStorage.setItem('twoFactorSession', result.twoFactorSession);
                 }
+
+                // Biometric login authenticates the user but does not restore the vault key in storage.
+                setDbKey(null);
 
                 setTwoFactorVerified(true);
                 return true;
@@ -213,9 +169,9 @@ export function AuthProvider({ children }) {
             console.error("Biometric Login Failed:", e);
             throw e;
         }
-    }
+    }, [setTwoFactorVerified]);
 
-    const value = {
+    const value = useMemo(() => ({
         currentUser,
         dbKey,
         setDbKey, // helper if we implement "Unlock" screen
@@ -227,7 +183,18 @@ export function AuthProvider({ children }) {
         resetPassword,
         enableBiometrics,
         loginWithBiometrics
-    };
+    }), [
+        currentUser,
+        dbKey,
+        twoFactorVerified,
+        setTwoFactorVerified,
+        signup,
+        login,
+        logout,
+        resetPassword,
+        enableBiometrics,
+        loginWithBiometrics
+    ]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -299,7 +266,7 @@ export function AuthProvider({ children }) {
             if (throttleTimer) clearTimeout(throttleTimer);
             events.forEach(event => window.removeEventListener(event, handleActivity));
         };
-    }, [currentUser]);
+    }, [currentUser, logout]);
 
 
 

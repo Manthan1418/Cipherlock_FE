@@ -75,7 +75,8 @@ export default {
             if (verificationResp.data.verified) {
                 return {
                     verified: true,
-                    token: verificationResp.data.token // Custom Firebase Token
+                    token: verificationResp.data.token, // Custom Firebase Token
+                    twoFactorSession: verificationResp.data.twoFactorSession,
                 };
             } else {
                 throw new Error('Verification failed');
