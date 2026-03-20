@@ -22,6 +22,7 @@ export function AuthProvider({ children }) {
 
     // Keep key material in memory only.
     const [dbKey, setDbKey] = useState(null);
+    const [legacyKey, setLegacyKey] = useState(null);
     const [twoFactorVerified, _setTwoFactorVerified] = useState(() => {
         return sessionStorage.getItem('twoFactorVerified') === 'true';
     });
@@ -37,8 +38,8 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
-    const getKdfSalt = useCallback(async () => {
-        const res = await api.post('/auth/kdf-salt');
+    const getKdfSalt = useCallback(async (email = null) => {
+        const res = await api.post('/auth/kdf-salt', { email });
         if (!res?.data?.salt) {
             throw new Error('Unable to initialize key derivation salt');
         }
@@ -89,10 +90,12 @@ export function AuthProvider({ children }) {
     const signup = useCallback((email, password) => {
         return createUserWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const kdfSalt = await getKdfSalt();
-                const key = await deriveKey(password, kdfSalt);
-                setDbKey(key);
-                setTwoFactorVerified(true); // New users don't have 2FA yet
+                const kdfSalt = await getKdfSalt(email);
+                const primaryKey = await deriveKey(password, kdfSalt);
+                const fallKey = await deriveKey(password, email);
+                setDbKey(primaryKey);
+                setLegacyKey(fallKey);
+                setTwoFactorVerified(true);
                 return cred;
             });
     }, [getKdfSalt, setTwoFactorVerified]);
@@ -100,16 +103,18 @@ export function AuthProvider({ children }) {
     const login = useCallback((email, password) => {
         return signInWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const kdfSalt = await getKdfSalt();
-                const key = await deriveKey(password, kdfSalt);
-                setDbKey(key);
-                // 2FA status check happens in useEffect
+                const kdfSalt = await getKdfSalt(email);
+                const primaryKey = await deriveKey(password, kdfSalt);
+                const fallKey = await deriveKey(password, email);
+                setDbKey(primaryKey);
+                setLegacyKey(fallKey);
                 return cred;
             });
     }, [getKdfSalt]);
 
     const logout = useCallback(() => {
         setDbKey(null);
+        setLegacyKey(null);
         sessionStorage.removeItem('lastActiveTime'); // Clear activity timer too
         sessionStorage.removeItem('twoFactorVerified');
         sessionStorage.removeItem('twoFactorSession');
@@ -174,7 +179,8 @@ export function AuthProvider({ children }) {
     const value = useMemo(() => ({
         currentUser,
         dbKey,
-        setDbKey, // helper if we implement "Unlock" screen
+        legacyKey,
+        setDbKey,
         twoFactorVerified,
         setTwoFactorVerified,
         signup,
@@ -186,6 +192,7 @@ export function AuthProvider({ children }) {
     }), [
         currentUser,
         dbKey,
+        legacyKey,
         twoFactorVerified,
         setTwoFactorVerified,
         signup,

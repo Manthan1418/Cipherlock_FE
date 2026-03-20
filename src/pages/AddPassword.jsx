@@ -44,7 +44,7 @@ export default function AddPassword() {
     const [includeNumbers, setIncludeNumbers] = useState(true);
     const [includeSymbols, setIncludeSymbols] = useState(true);
 
-    const { dbKey, currentUser } = useAuth();
+    const { dbKey, legacyKey, currentUser } = useAuth();
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
@@ -94,7 +94,20 @@ export default function AddPassword() {
             setUsername(item.username);
             setCategory(item.category || 'General');
             try {
-                const plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
+                let plaintext;
+                try {
+                    plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
+                } catch (primaryErr) {
+                    if (legacyKey) {
+                        try {
+                            plaintext = await decryptData(legacyKey, item.encryptedPassword, item.iv);
+                        } catch (legacyErr) {
+                            throw primaryErr;
+                        }
+                    } else {
+                        throw primaryErr;
+                    }
+                }
                 setPassword(plaintext);
             } catch (decryptErr) {
                 console.error("Decryption failed", decryptErr);
