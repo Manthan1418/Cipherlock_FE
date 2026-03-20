@@ -355,8 +355,8 @@ export default function Dashboard() {
 
                                 <div className="flex flex-row lg:flex-col items-center gap-3 sm:gap-4">
                                     {/* Pie Chart - Left on mobile, top on desktop sidebar */}
-                                    <div className="w-1/2 lg:w-full relative z-10 flex-shrink-0" style={{ height: '220px', minHeight: '150px' }}>
-                                        <ResponsiveContainer width="99%" height="100%">
+                                    <div className="w-1/2 lg:w-full flex justify-center items-center relative z-10 flex-shrink-0" style={{ height: 220, minHeight: 150 }}>
+                                        <ResponsiveContainer width="99%" height={200}>
                                             <PieChart>
                                                 <Pie
                                                     data={strengthStats.data}
