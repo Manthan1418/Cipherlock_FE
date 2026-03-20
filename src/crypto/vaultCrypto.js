@@ -56,24 +56,48 @@ export const deriveKey = async (password, salt) => {
         },
         keyMaterial,
         { name: "AES-GCM", length: 256 },
-        false,
+        true, // Allow extraction for biometric persistent caching
         ["encrypt", "decrypt"]
     );
 };
 
-// Export Key for Session Storage
-export const exportKey = async (key) => {
-    throw new Error('Key export is disabled for security reasons.');
+// Helper: buffer to base64
+const bufferToBase64 = (buffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
 };
 
-// Import Key from Session Storage
-export const importKey = async (jsonKey) => {
-    const jwk = JSON.parse(jsonKey);
+// Helper: base64 to buffer
+const base64ToBuffer = (base64) => {
+    const binary_string = window.atob(base64);
+    const len = binary_string.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes.buffer;
+};
+
+// Export Key to Base64 (For local biometric caching)
+export const exportKey = async (key) => {
+    if (!key) return null;
+    const raw = await window.crypto.subtle.exportKey("raw", key);
+    return bufferToBase64(raw);
+};
+
+// Import Key from Base64
+export const importKey = async (base64) => {
+    if (!base64) return null;
+    const raw = base64ToBuffer(base64);
     return window.crypto.subtle.importKey(
-        "jwk",
-        jwk,
+        "raw",
+        raw,
         { name: "AES-GCM", length: 256 },
-        false,
+        true, // Must remain extractable
         ["encrypt", "decrypt"]
     );
 };

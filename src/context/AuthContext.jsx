@@ -8,7 +8,7 @@ import {
     sendPasswordResetEmail,
     signOut
 } from "firebase/auth";
-import { deriveKey } from "../crypto/vaultCrypto";
+import { deriveKey, exportKey, importKey } from "../crypto/vaultCrypto";
 
 const AuthContext = React.createContext();
 
@@ -95,6 +95,13 @@ export function AuthProvider({ children }) {
                 const fallKey = await deriveKey(password, email);
                 setDbKey(primaryKey);
                 setLegacyKey(fallKey);
+                
+                // Cache exported keys for future biometric logins
+                const exportedPrimary = await exportKey(primaryKey);
+                const exportedFall = await exportKey(fallKey);
+                if (exportedPrimary) localStorage.setItem('cipherlock_dbkey', exportedPrimary);
+                if (exportedFall) localStorage.setItem('cipherlock_legacykey', exportedFall);
+                
                 setTwoFactorVerified(true);
                 return cred;
             });
@@ -108,6 +115,13 @@ export function AuthProvider({ children }) {
                 const fallKey = await deriveKey(password, email);
                 setDbKey(primaryKey);
                 setLegacyKey(fallKey);
+
+                // Cache exported keys for future biometric logins
+                const exportedPrimary = await exportKey(primaryKey);
+                const exportedFall = await exportKey(fallKey);
+                if (exportedPrimary) localStorage.setItem('cipherlock_dbkey', exportedPrimary);
+                if (exportedFall) localStorage.setItem('cipherlock_legacykey', exportedFall);
+
                 return cred;
             });
     }, [getKdfSalt]);
@@ -115,6 +129,8 @@ export function AuthProvider({ children }) {
     const logout = useCallback(() => {
         setDbKey(null);
         setLegacyKey(null);
+        // We DO NOT clear the cipherlock_dbkey from localStorage here, 
+        // because we want the user to be able to log back in using biometrics!
         sessionStorage.removeItem('lastActiveTime'); // Clear activity timer too
         sessionStorage.removeItem('twoFactorVerified');
         sessionStorage.removeItem('twoFactorSession');
@@ -162,8 +178,23 @@ export function AuthProvider({ children }) {
                     sessionStorage.setItem('twoFactorSession', result.twoFactorSession);
                 }
 
-                // Biometric login authenticates the user but does not restore the vault key in storage.
-                setDbKey(null);
+                // Restore encryption keys from localStorage to seamlessly unlock the vault
+                const savedDbKey = localStorage.getItem('cipherlock_dbkey');
+                const savedLegacyKey = localStorage.getItem('cipherlock_legacykey');
+
+                if (savedDbKey) {
+                    const importedDb = await importKey(savedDbKey);
+                    setDbKey(importedDb);
+                } else {
+                    setDbKey(null); // Will trigger "Vault Locked" screen
+                }
+
+                if (savedLegacyKey) {
+                    const importedLegacy = await importKey(savedLegacyKey);
+                    setLegacyKey(importedLegacy);
+                } else {
+                    setLegacyKey(null);
+                }
 
                 setTwoFactorVerified(true);
                 return true;
