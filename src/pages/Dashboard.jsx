@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -18,6 +18,8 @@ export default function Dashboard() {
     const { dbKey, legacyKeys } = useAuth();
     const [decryptedCache, setDecryptedCache] = useState({});
     const [visiblePasswords, setVisiblePasswords] = useState({});
+    const chartContainerRef = useRef(null);
+    const [isChartReady, setIsChartReady] = useState(false);
 
 
 
@@ -82,6 +84,27 @@ export default function Dashboard() {
 
         return () => { isMounted = false; };
     }, [passwords, decryptedCache]);
+
+    useEffect(() => {
+        const el = chartContainerRef.current;
+        if (!el) return;
+
+        const updateReady = () => {
+            const rect = el.getBoundingClientRect();
+            setIsChartReady(rect.width > 0 && rect.height > 0);
+        };
+
+        updateReady();
+
+        if (typeof ResizeObserver === 'undefined') {
+            return;
+        }
+
+        const observer = new ResizeObserver(() => updateReady());
+        observer.observe(el);
+
+        return () => observer.disconnect();
+    }, []);
 
     async function fetchVault() {
         try {
@@ -352,30 +375,34 @@ export default function Dashboard() {
 
                                 <div className="flex flex-row lg:flex-col items-center gap-3 sm:gap-4">
                                     {/* Pie Chart - Left on mobile, top on desktop sidebar */}
-                                    <div className="w-1/2 lg:w-full h-32 sm:h-48 relative z-10 flex-shrink-0 outline-none focus:outline-none active:outline-none">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={strengthStats.data}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius="50%"
-                                                    outerRadius="70%"
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                    stroke="white"
-                                                >
-                                                    {strengthStats.data.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <RechartsTooltip
-                                                    cursor={false}
-                                                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                                    itemStyle={{ color: 'var(--text-primary)' }}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                                    <div ref={chartContainerRef} className="w-1/2 lg:w-full h-32 sm:h-48 min-w-0 relative z-10 flex-shrink-0 outline-none focus:outline-none active:outline-none">
+                                        {isChartReady ? (
+                                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={120}>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={strengthStats.data}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius="50%"
+                                                        outerRadius="70%"
+                                                        paddingAngle={5}
+                                                        dataKey="value"
+                                                        stroke="white"
+                                                    >
+                                                        {strengthStats.data.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <RechartsTooltip
+                                                        cursor={false}
+                                                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                                        itemStyle={{ color: 'var(--text-primary)' }}
+                                                    />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="w-full h-full rounded-xl" style={{ background: 'rgba(99, 102, 241, 0.08)' }} />
+                                        )}
                                         {/* Center Text */}
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                             <div className="text-center">

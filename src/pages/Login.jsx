@@ -423,7 +423,7 @@ function LoginFormContent() {
         } catch (err) {
             console.error(err);
             const code = err.code;
-            if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+            if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
                 toast.error('Incorrect password. Please try again.');
             } else if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
                 toast.error('No account found with that email.');
