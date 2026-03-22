@@ -14,6 +14,7 @@ export default defineConfig({
                     vendor_firebase: ['firebase/app', 'firebase/auth'],
                     vendor_motion: ['framer-motion'],
                     vendor_charts: ['recharts'],
+                    vendor_three: ['three', '@react-three/fiber', '@react-three/drei'],
                 },
             },
         },

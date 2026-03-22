@@ -218,6 +218,7 @@ function AnimatedButton({ children, loading, disabled, type = 'submit', onClick 
             whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
             whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            data-testid={`button-${children?.toString().toLowerCase().replace(/\s+/g, '-') || 'action'}`}
         >
 
             <AnimatePresence mode="wait">
@@ -286,6 +287,7 @@ function AnimatedInput({ label, type, value, onChange, placeholder, required, de
                     borderColor: highlight ? 'var(--accent-primary)' : 'var(--border-input)',
                     '--tw-placeholder-color': 'var(--text-muted)'
                 }}
+                data-testid={`input-${label.toLowerCase().replace(/\s+/g, '-')}`}
             />
         </motion.div>
     );

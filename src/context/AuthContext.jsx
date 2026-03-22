@@ -8,7 +8,7 @@ import {
     sendPasswordResetEmail,
     signOut
 } from "firebase/auth";
-import { deriveKey, exportKey, importKey } from "../crypto/vaultCrypto";
+import { deriveKey } from "../crypto/vaultCrypto";
 
 const AuthContext = React.createContext();
 
@@ -22,7 +22,6 @@ export function AuthProvider({ children }) {
 
     // Keep key material in memory only.
     const [dbKey, setDbKey] = useState(null);
-    const [legacyKey, setLegacyKey] = useState(null);
     const [twoFactorVerified, _setTwoFactorVerified] = useState(() => {
         return sessionStorage.getItem('twoFactorVerified') === 'true';
     });
@@ -38,8 +37,8 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
-    const getKdfSalt = useCallback(async (email = null) => {
-        const res = await api.post('/auth/kdf-salt', { email });
+    const getKdfSalt = useCallback(async () => {
+        const res = await api.post('/auth/kdf-salt');
         if (!res?.data?.salt) {
             throw new Error('Unable to initialize key derivation salt');
         }
@@ -90,19 +89,10 @@ export function AuthProvider({ children }) {
     const signup = useCallback((email, password) => {
         return createUserWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const kdfSalt = await getKdfSalt(email);
-                const primaryKey = await deriveKey(password, kdfSalt);
-                const fallKey = await deriveKey(password, email);
-                setDbKey(primaryKey);
-                setLegacyKey(fallKey);
-                
-                // Cache exported keys for future biometric logins
-                const exportedPrimary = await exportKey(primaryKey);
-                const exportedFall = await exportKey(fallKey);
-                if (exportedPrimary) localStorage.setItem('cipherlock_dbkey', exportedPrimary);
-                if (exportedFall) localStorage.setItem('cipherlock_legacykey', exportedFall);
-                
-                setTwoFactorVerified(true);
+                const kdfSalt = await getKdfSalt();
+                const key = await deriveKey(password, kdfSalt);
+                setDbKey(key);
+                setTwoFactorVerified(true); // New users don't have 2FA yet
                 return cred;
             });
     }, [getKdfSalt, setTwoFactorVerified]);
@@ -110,27 +100,16 @@ export function AuthProvider({ children }) {
     const login = useCallback((email, password) => {
         return signInWithEmailAndPassword(auth, email, password)
             .then(async (cred) => {
-                const kdfSalt = await getKdfSalt(email);
-                const primaryKey = await deriveKey(password, kdfSalt);
-                const fallKey = await deriveKey(password, email);
-                setDbKey(primaryKey);
-                setLegacyKey(fallKey);
-
-                // Cache exported keys for future biometric logins
-                const exportedPrimary = await exportKey(primaryKey);
-                const exportedFall = await exportKey(fallKey);
-                if (exportedPrimary) localStorage.setItem('cipherlock_dbkey', exportedPrimary);
-                if (exportedFall) localStorage.setItem('cipherlock_legacykey', exportedFall);
-
+                const kdfSalt = await getKdfSalt();
+                const key = await deriveKey(password, kdfSalt);
+                setDbKey(key);
+                // 2FA status check happens in useEffect
                 return cred;
             });
     }, [getKdfSalt]);
 
     const logout = useCallback(() => {
         setDbKey(null);
-        setLegacyKey(null);
-        // We DO NOT clear the cipherlock_dbkey from localStorage here, 
-        // because we want the user to be able to log back in using biometrics!
         sessionStorage.removeItem('lastActiveTime'); // Clear activity timer too
         sessionStorage.removeItem('twoFactorVerified');
         sessionStorage.removeItem('twoFactorSession');
@@ -178,23 +157,8 @@ export function AuthProvider({ children }) {
                     sessionStorage.setItem('twoFactorSession', result.twoFactorSession);
                 }
 
-                // Restore encryption keys from localStorage to seamlessly unlock the vault
-                const savedDbKey = localStorage.getItem('cipherlock_dbkey');
-                const savedLegacyKey = localStorage.getItem('cipherlock_legacykey');
-
-                if (savedDbKey) {
-                    const importedDb = await importKey(savedDbKey);
-                    setDbKey(importedDb);
-                } else {
-                    setDbKey(null); // Will trigger "Vault Locked" screen
-                }
-
-                if (savedLegacyKey) {
-                    const importedLegacy = await importKey(savedLegacyKey);
-                    setLegacyKey(importedLegacy);
-                } else {
-                    setLegacyKey(null);
-                }
+                // Biometric login authenticates the user but does not restore the vault key in storage.
+                setDbKey(null);
 
                 setTwoFactorVerified(true);
                 return true;
@@ -210,8 +174,7 @@ export function AuthProvider({ children }) {
     const value = useMemo(() => ({
         currentUser,
         dbKey,
-        legacyKey,
-        setDbKey,
+        setDbKey, // helper if we implement "Unlock" screen
         twoFactorVerified,
         setTwoFactorVerified,
         signup,
@@ -223,7 +186,6 @@ export function AuthProvider({ children }) {
     }), [
         currentUser,
         dbKey,
-        legacyKey,
         twoFactorVerified,
         setTwoFactorVerified,
         signup,

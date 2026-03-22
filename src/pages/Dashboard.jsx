@@ -15,7 +15,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const { dbKey, legacyKey, currentUser, logout, enableBiometrics } = useAuth();
+    const { dbKey, enableBiometrics } = useAuth();
     const [decryptedCache, setDecryptedCache] = useState({});
     const [visiblePasswords, setVisiblePasswords] = useState({});
 
@@ -101,21 +101,7 @@ export default function Dashboard() {
         // Parallelize decryption for speed
         const results = await Promise.all(items.map(async (item) => {
             try {
-                let plaintext;
-                try {
-                    plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
-                } catch (primaryErr) {
-                    if (legacyKey) {
-                        try {
-                            plaintext = await decryptData(legacyKey, item.encryptedPassword, item.iv);
-                            console.log(`Successfully used legacy key for item ${item.id}`);
-                        } catch (legacyErr) {
-                            throw primaryErr;
-                        }
-                    } else {
-                        throw primaryErr;
-                    }
-                }
+                const plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
                 return { id: item.id, plaintext };
             } catch (e) {
                 console.error(`Failed to decrypt item ${item.id}`, e);
@@ -289,6 +275,7 @@ export default function Dashboard() {
                                     borderColor: 'var(--border-color)',
                                     color: 'var(--text-primary)'
                                 }}
+                                data-testid="dashboard-search-input"
                             />
                         </div>
 
@@ -316,6 +303,7 @@ export default function Dashboard() {
                                                     borderColor: 'var(--border-color)'
                                                 }
                                             }
+                                            data-testid={`category-tab-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                                         >
                                             {cat} {cat !== 'All' && <span className="ml-1 opacity-60 text-xs">({categoryCounts[cat] || 0})</span>}
                                         </button>
@@ -355,8 +343,8 @@ export default function Dashboard() {
 
                                 <div className="flex flex-row lg:flex-col items-center gap-3 sm:gap-4">
                                     {/* Pie Chart - Left on mobile, top on desktop sidebar */}
-                                    <div className="w-1/2 lg:w-full flex justify-center items-center relative z-10 flex-shrink-0" style={{ height: 220, minHeight: 150 }}>
-                                        <ResponsiveContainer width="99%" height={200}>
+                                    <div className="w-1/2 lg:w-full h-32 sm:h-48 relative z-10 flex-shrink-0 outline-none focus:outline-none active:outline-none">
+                                        <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={strengthStats.data}
