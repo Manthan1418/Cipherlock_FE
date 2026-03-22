@@ -128,7 +128,7 @@ export default function Dashboard() {
             try {
                 for (const key of candidateKeys) {
                     try {
-                        const plaintext = await decryptData(key, item.encryptedPassword, item.iv);
+                        const plaintext = await decryptData(key, item.encryptedPassword, item.iv, { silent: true });
                         return { id: item.id, plaintext };
                     } catch {
                         // Try next candidate key.

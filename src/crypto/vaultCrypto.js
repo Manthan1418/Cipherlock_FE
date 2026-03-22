@@ -99,7 +99,8 @@ export const encryptData = async (permissionKey, plainText) => {
 };
 
 // Decrypt data
-export const decryptData = async (permissionKey, ciphertextHex, ivHex) => {
+export const decryptData = async (permissionKey, ciphertextHex, ivHex, options = {}) => {
+    const { silent = false } = options;
     try {
         const ciphertext = hexToArrayBuffer(ciphertextHex);
         const iv = hexToArrayBuffer(ivHex);
@@ -116,7 +117,9 @@ export const decryptData = async (permissionKey, ciphertextHex, ivHex) => {
         const dec = new TextDecoder();
         return dec.decode(decrypted);
     } catch (e) {
-        console.error("Decryption failed", e);
+        if (!silent) {
+            console.error("Decryption failed", e);
+        }
         throw new Error("Failed to decrypt. Master password might be wrong or data corrupted.");
     }
 };

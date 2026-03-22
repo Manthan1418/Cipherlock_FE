@@ -96,13 +96,13 @@ export default function AddPassword() {
             try {
                 let plaintext;
                 try {
-                    plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
+                    plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv, { silent: true });
                 } catch (primaryErr) {
                     if (legacyKeys?.length) {
                         let legacySucceeded = false;
                         for (const key of legacyKeys) {
                             try {
-                                plaintext = await decryptData(key, item.encryptedPassword, item.iv);
+                                plaintext = await decryptData(key, item.encryptedPassword, item.iv, { silent: true });
                                 legacySucceeded = true;
                                 break;
                             } catch {
