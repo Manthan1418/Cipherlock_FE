@@ -15,7 +15,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const { dbKey, enableBiometrics } = useAuth();
+    const { dbKey, legacyKeys } = useAuth();
     const [decryptedCache, setDecryptedCache] = useState({});
     const [visiblePasswords, setVisiblePasswords] = useState({});
 
@@ -98,11 +98,20 @@ export default function Dashboard() {
     async function decryptAll(items) {
         if (!dbKey) return;
 
+        const candidateKeys = [dbKey, ...(legacyKeys || [])];
+
         // Parallelize decryption for speed
         const results = await Promise.all(items.map(async (item) => {
             try {
-                const plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
-                return { id: item.id, plaintext };
+                for (const key of candidateKeys) {
+                    try {
+                        const plaintext = await decryptData(key, item.encryptedPassword, item.iv);
+                        return { id: item.id, plaintext };
+                    } catch {
+                        // Try next candidate key.
+                    }
+                }
+                throw new Error('No matching key could decrypt this item.');
             } catch (e) {
                 console.error(`Failed to decrypt item ${item.id}`, e);
                 return { id: item.id, plaintext: "ERROR: Decryption Failed" };

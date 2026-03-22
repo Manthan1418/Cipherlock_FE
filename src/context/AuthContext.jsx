@@ -22,6 +22,7 @@ export function AuthProvider({ children }) {
 
     // Keep key material in memory only.
     const [dbKey, setDbKey] = useState(null);
+    const [legacyKeys, setLegacyKeys] = useState([]);
     const [twoFactorVerified, _setTwoFactorVerified] = useState(() => {
         return sessionStorage.getItem('twoFactorVerified') === 'true';
     });
@@ -43,6 +44,32 @@ export function AuthProvider({ children }) {
             throw new Error('Unable to initialize key derivation salt');
         }
         return res.data.salt;
+    }, []);
+
+    const deriveLegacyKeys = useCallback(async (password, user, emailHint = null) => {
+        const salts = [];
+
+        const addSalt = (value) => {
+            if (!value || typeof value !== 'string') return;
+            if (!salts.includes(value)) salts.push(value);
+        };
+
+        const email = user?.email || emailHint;
+        if (email) {
+            addSalt(email);
+            addSalt(email.trim());
+            addSalt(email.toLowerCase());
+            addSalt(email.trim().toLowerCase());
+        }
+
+        if (user?.uid) {
+            addSalt(user.uid);
+        }
+
+        if (salts.length === 0) return [];
+
+        const keys = await Promise.all(salts.map((salt) => deriveKey(password, salt)));
+        return keys;
     }, []);
 
     // Wake up the Render backend (biometrics) to mitigate cold starts
@@ -92,6 +119,7 @@ export function AuthProvider({ children }) {
                 const kdfSalt = await getKdfSalt();
                 const key = await deriveKey(password, kdfSalt);
                 setDbKey(key);
+                setLegacyKeys([]);
                 setTwoFactorVerified(true); // New users don't have 2FA yet
                 return cred;
             });
@@ -102,14 +130,17 @@ export function AuthProvider({ children }) {
             .then(async (cred) => {
                 const kdfSalt = await getKdfSalt();
                 const key = await deriveKey(password, kdfSalt);
+                const fallbackKeys = await deriveLegacyKeys(password, cred?.user, email);
                 setDbKey(key);
+                setLegacyKeys(fallbackKeys);
                 // 2FA status check happens in useEffect
                 return cred;
             });
-    }, [getKdfSalt]);
+    }, [deriveLegacyKeys, getKdfSalt]);
 
     const logout = useCallback(() => {
         setDbKey(null);
+        setLegacyKeys([]);
         sessionStorage.removeItem('lastActiveTime'); // Clear activity timer too
         sessionStorage.removeItem('twoFactorVerified');
         sessionStorage.removeItem('twoFactorSession');
@@ -159,6 +190,7 @@ export function AuthProvider({ children }) {
 
                 // Biometric login authenticates the user but does not restore the vault key in storage.
                 setDbKey(null);
+                setLegacyKeys([]);
 
                 setTwoFactorVerified(true);
                 return true;
@@ -174,6 +206,7 @@ export function AuthProvider({ children }) {
     const value = useMemo(() => ({
         currentUser,
         dbKey,
+        legacyKeys,
         setDbKey, // helper if we implement "Unlock" screen
         twoFactorVerified,
         setTwoFactorVerified,
@@ -186,6 +219,7 @@ export function AuthProvider({ children }) {
     }), [
         currentUser,
         dbKey,
+        legacyKeys,
         twoFactorVerified,
         setTwoFactorVerified,
         signup,

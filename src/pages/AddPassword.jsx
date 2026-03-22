@@ -44,7 +44,7 @@ export default function AddPassword() {
     const [includeNumbers, setIncludeNumbers] = useState(true);
     const [includeSymbols, setIncludeSymbols] = useState(true);
 
-    const { dbKey, legacyKey, currentUser } = useAuth();
+    const { dbKey, legacyKeys, currentUser } = useAuth();
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
@@ -98,10 +98,18 @@ export default function AddPassword() {
                 try {
                     plaintext = await decryptData(dbKey, item.encryptedPassword, item.iv);
                 } catch (primaryErr) {
-                    if (legacyKey) {
-                        try {
-                            plaintext = await decryptData(legacyKey, item.encryptedPassword, item.iv);
-                        } catch (legacyErr) {
+                    if (legacyKeys?.length) {
+                        let legacySucceeded = false;
+                        for (const key of legacyKeys) {
+                            try {
+                                plaintext = await decryptData(key, item.encryptedPassword, item.iv);
+                                legacySucceeded = true;
+                                break;
+                            } catch {
+                                // Continue to next legacy key.
+                            }
+                        }
+                        if (!legacySucceeded) {
                             throw primaryErr;
                         }
                     } else {
