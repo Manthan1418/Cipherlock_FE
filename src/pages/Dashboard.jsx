@@ -15,9 +15,11 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const { dbKey, legacyKeys } = useAuth();
+    const { dbKey, legacyKeys, unlockVault } = useAuth();
     const [decryptedCache, setDecryptedCache] = useState({});
     const [visiblePasswords, setVisiblePasswords] = useState({});
+    const [unlockPassword, setUnlockPassword] = useState('');
+    const [unlocking, setUnlocking] = useState(false);
     const chartContainerRef = useRef(null);
     const [isChartReady, setIsChartReady] = useState(false);
 
@@ -238,12 +240,55 @@ export default function Dashboard() {
         return result;
     }, [passwords, activeCategory, searchQuery]);
 
+    async function handleUnlockVault(e) {
+        e.preventDefault();
+        try {
+            setUnlocking(true);
+            await unlockVault(unlockPassword);
+            setUnlockPassword('');
+            toast.success('Vault unlocked successfully.');
+        } catch (error) {
+            console.error('Vault unlock failed', error);
+            toast.error('Could not unlock vault. Please verify your master password.');
+        } finally {
+            setUnlocking(false);
+        }
+    }
+
     if (!dbKey) {
         return (
-            <div className="flex flex-col items-center justify-center h-64 glass rounded-2xl p-8 glow">
-                <Shield className="w-16 h-16 text-red-500 mb-4 pulse-icon" />
-                <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--error-text)' }}>Vault Locked</h2>
-                <p className="text-center" style={{ color: 'var(--text-secondary)' }}>Your session encryption key is missing. Please re-login.</p>
+            <div className="glass rounded-2xl p-8 glow max-w-md mx-auto">
+                <div className="flex flex-col items-center justify-center">
+                    <Shield className="w-16 h-16 text-red-500 mb-4 pulse-icon" />
+                    <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--error-text)' }}>Vault Locked</h2>
+                    <p className="text-center mb-5" style={{ color: 'var(--text-secondary)' }}>
+                        You are authenticated, but the session encryption key is missing. Enter your master password to unlock the vault.
+                    </p>
+
+                    <form onSubmit={handleUnlockVault} className="w-full space-y-3">
+                        <input
+                            type="password"
+                            value={unlockPassword}
+                            onChange={(e) => setUnlockPassword(e.target.value)}
+                            placeholder="Enter master password"
+                            required
+                            className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            style={{
+                                backgroundColor: 'var(--bg-input)',
+                                color: 'var(--text-primary)',
+                                borderColor: 'var(--border-input)'
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={unlocking}
+                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-medium transition-all disabled:opacity-60"
+                        >
+                            {unlocking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                            {unlocking ? 'Unlocking...' : 'Unlock Vault'}
+                        </button>
+                    </form>
+                </div>
             </div>
         );
     }

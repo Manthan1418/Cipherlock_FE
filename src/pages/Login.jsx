@@ -346,7 +346,7 @@ function LoginFormContent() {
             setLoading(true);
             const success = await loginWithBiometrics(email);
             if (success) {
-                toast.success('Signed in with your passkey!');
+                toast.success('Signed in with passkey. Enter master password to unlock vault.');
                 navigate('/dashboard');
             }
         } catch (err) {

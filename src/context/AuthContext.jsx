@@ -203,6 +203,23 @@ export function AuthProvider({ children }) {
         }
     }, [setTwoFactorVerified]);
 
+    const unlockVault = useCallback(async (masterPassword) => {
+        if (!currentUser) {
+            throw new Error('No authenticated user found. Please login again.');
+        }
+        if (!masterPassword || !masterPassword.trim()) {
+            throw new Error('Master password is required.');
+        }
+
+        const kdfSalt = await getKdfSalt();
+        const key = await deriveKey(masterPassword, kdfSalt);
+        const fallbackKeys = await deriveLegacyKeys(masterPassword, currentUser, currentUser?.email || null);
+
+        setDbKey(key);
+        setLegacyKeys(fallbackKeys);
+        return true;
+    }, [currentUser, deriveLegacyKeys, getKdfSalt]);
+
     const value = useMemo(() => ({
         currentUser,
         dbKey,
@@ -215,7 +232,8 @@ export function AuthProvider({ children }) {
         logout,
         resetPassword,
         enableBiometrics,
-        loginWithBiometrics
+        loginWithBiometrics,
+        unlockVault
     }), [
         currentUser,
         dbKey,
@@ -227,7 +245,8 @@ export function AuthProvider({ children }) {
         logout,
         resetPassword,
         enableBiometrics,
-        loginWithBiometrics
+        loginWithBiometrics,
+        unlockVault
     ]);
 
     useEffect(() => {
