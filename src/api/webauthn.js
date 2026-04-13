@@ -28,7 +28,10 @@ export default {
             const verificationResp = await api.post('/auth/webauthn/register/verify', attResp);
 
             if (verificationResp.data.verified) {
-                return true;
+                return {
+                    verified: true,
+                    credentialId: attResp.id,
+                };
             } else {
                 throw new Error('Verification failed');
             }
@@ -77,6 +80,8 @@ export default {
                     verified: true,
                     token: verificationResp.data.token, // Custom Firebase Token
                     twoFactorSession: verificationResp.data.twoFactorSession,
+                    credentialId: verificationResp.data.credentialId,
+                    wrappedVaultKey: verificationResp.data.wrappedVaultKey,
                 };
             } else {
                 throw new Error('Verification failed');

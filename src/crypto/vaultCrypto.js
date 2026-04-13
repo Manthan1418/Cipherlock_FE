@@ -56,8 +56,73 @@ export const deriveKey = async (password, salt) => {
         },
         keyMaterial,
         { name: "AES-GCM", length: 256 },
-        false,
+        true,
         ["encrypt", "decrypt"]
+    );
+};
+
+const deriveWrapKeyFromCredentialId = async (credentialId) => {
+    if (!credentialId || typeof credentialId !== 'string') {
+        throw new Error('A valid credentialId is required');
+    }
+
+    const enc = new TextEncoder();
+    const hash = await window.crypto.subtle.digest('SHA-256', enc.encode(`cipherlock-wrap:${credentialId}`));
+    return window.crypto.subtle.importKey(
+        'raw',
+        hash,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['wrapKey', 'unwrapKey']
+    );
+};
+
+export const wrapVaultKeyWithCredential = async (dbKey, credentialId) => {
+    if (!dbKey) {
+        throw new Error('Vault key is not available to wrap');
+    }
+
+    const wrapKey = await deriveWrapKeyFromCredentialId(credentialId);
+    const iv = window.crypto.getRandomValues(new Uint8Array(IV_SIZE));
+    const wrapped = await window.crypto.subtle.wrapKey(
+        'raw',
+        dbKey,
+        wrapKey,
+        {
+            name: 'AES-GCM',
+            iv,
+        }
+    );
+
+    return {
+        wrappedKey: arrayBufferToHex(wrapped),
+        iv: arrayBufferToHex(iv),
+    };
+};
+
+export const unwrapVaultKeyWithCredential = async (wrappedKeyHex, ivHex, credentialId) => {
+    if (!wrappedKeyHex || !ivHex || !credentialId) {
+        throw new Error('Wrapped key bundle is incomplete');
+    }
+
+    const wrapKey = await deriveWrapKeyFromCredentialId(credentialId);
+    const wrappedKey = hexToArrayBuffer(wrappedKeyHex);
+    const iv = hexToArrayBuffer(ivHex);
+
+    return window.crypto.subtle.unwrapKey(
+        'raw',
+        wrappedKey,
+        wrapKey,
+        {
+            name: 'AES-GCM',
+            iv,
+        },
+        {
+            name: 'AES-GCM',
+            length: 256,
+        },
+        true,
+        ['encrypt', 'decrypt']
     );
 };
 

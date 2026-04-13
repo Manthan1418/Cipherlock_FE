@@ -8,7 +8,7 @@ import {
     sendPasswordResetEmail,
     signOut
 } from "firebase/auth";
-import { deriveKey } from "../crypto/vaultCrypto";
+import { deriveKey, wrapVaultKeyWithCredential, unwrapVaultKeyWithCredential } from "../crypto/vaultCrypto";
 
 const AuthContext = React.createContext();
 
@@ -152,27 +152,49 @@ export function AuthProvider({ children }) {
         return sendPasswordResetEmail(auth, email);
     }, []);
 
+    const ensureCrossDevicePasskeyOrigin = useCallback(() => {
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') {
+            const error = new Error(
+                'Cross-device passkeys need a secure public HTTPS origin. localhost is not supported for phone QR setup. Use a deployed HTTPS URL or a tunnel like ngrok.'
+            );
+            error.name = 'CrossDeviceOriginError';
+            throw error;
+        }
+    }, []);
+
     // ==========================================
     // BIOMETRIC AUTH METHODS
     // ==========================================
 
     const enableBiometrics = useCallback(async () => {
         if (!currentUser || !dbKey) throw new Error("Must be logged in to enable biometrics");
+        ensureCrossDevicePasskeyOrigin();
 
         try {
             // 1. Register Credential
             const { default: apiWebAuthn } = await import('../api/webauthn');
-            await apiWebAuthn.registerBiometrics();
+            const registrationResult = await apiWebAuthn.registerBiometrics();
+
+            if (registrationResult?.credentialId) {
+                const wrappedBundle = await wrapVaultKeyWithCredential(dbKey, registrationResult.credentialId);
+                await api.post('/auth/webauthn/key-wrap/save', {
+                    credentialId: registrationResult.credentialId,
+                    wrappedKey: wrappedBundle.wrappedKey,
+                    iv: wrappedBundle.iv,
+                });
+            }
 
             return true;
         } catch (e) {
             console.error(e);
             throw e;
         }
-    }, [currentUser, dbKey]);
+    }, [currentUser, dbKey, ensureCrossDevicePasskeyOrigin]);
 
     const loginWithBiometrics = useCallback(async (email = null) => {
         try {
+            ensureCrossDevicePasskeyOrigin();
             const { default: apiWebAuthn } = await import('../api/webauthn');
 
             // For discoverable credentials, we don't need a UID. The authenticator provides it.
@@ -188,8 +210,25 @@ export function AuthProvider({ children }) {
                     sessionStorage.setItem('twoFactorSession', result.twoFactorSession);
                 }
 
-                // Biometric login authenticates the user but does not restore the vault key in storage.
-                setDbKey(null);
+                if (
+                    result?.credentialId &&
+                    result?.wrappedVaultKey?.wrappedKey &&
+                    result?.wrappedVaultKey?.iv
+                ) {
+                    try {
+                        const restoredKey = await unwrapVaultKeyWithCredential(
+                            result.wrappedVaultKey.wrappedKey,
+                            result.wrappedVaultKey.iv,
+                            result.credentialId
+                        );
+                        setDbKey(restoredKey);
+                    } catch (unwrapErr) {
+                        console.error('Failed to restore wrapped vault key after passkey login', unwrapErr);
+                        setDbKey(null);
+                    }
+                } else {
+                    setDbKey(null);
+                }
                 setLegacyKeys([]);
 
                 setTwoFactorVerified(true);
@@ -201,7 +240,7 @@ export function AuthProvider({ children }) {
             console.error("Biometric Login Failed:", e);
             throw e;
         }
-    }, [setTwoFactorVerified]);
+    }, [ensureCrossDevicePasskeyOrigin, setTwoFactorVerified]);
 
     const unlockVault = useCallback(async (masterPassword) => {
         if (!currentUser) {

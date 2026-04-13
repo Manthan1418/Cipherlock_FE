@@ -346,7 +346,7 @@ function LoginFormContent() {
             setLoading(true);
             const success = await loginWithBiometrics(email);
             if (success) {
-                toast.success('Signed in with passkey. Enter master password to unlock vault.');
+                toast.success('Signed in with passkey. Your vault opens automatically when the wrapped key is available.');
                 navigate('/dashboard');
             }
         } catch (err) {
@@ -354,7 +354,9 @@ function LoginFormContent() {
             const name = err?.name || '';
             const msg = err?.message || '';
 
-            if (name === 'NotAllowedError') {
+            if (name === 'CrossDeviceOriginError' || msg.toLowerCase().includes('secure public https origin')) {
+                toast.error('Cross-device passkeys do not work on localhost. Use a deployed HTTPS URL or an HTTPS tunnel like ngrok, then try again.');
+            } else if (name === 'NotAllowedError') {
                 // User dismissed the browser prompt
                 toast.error('Passkey sign-in was cancelled.');
             } else if (
