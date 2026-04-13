@@ -19,6 +19,19 @@ const CATEGORY_COLORS = {
     Other: { bg: 'rgba(107,114,128,0.15)', text: '#9ca3af' },
 };
 
+const MEANINGFUL_WORDS = [
+    'anchor', 'amber', 'apple', 'arrow', 'atlas', 'aurora', 'autumn', 'bamboo', 'beacon', 'berry',
+    'blossom', 'breeze', 'bridge', 'bronze', 'cactus', 'canyon', 'cedar', 'cherry', 'cipher', 'cloud',
+    'comet', 'coral', 'cosmos', 'crystal', 'dawn', 'delta', 'ember', 'falcon', 'forest', 'frost',
+    'galaxy', 'garden', 'glacier', 'harbor', 'horizon', 'island', 'jungle', 'lantern', 'meadow', 'meteor',
+    'midnight', 'mist', 'moon', 'mountain', 'nebula', 'oasis', 'ocean', 'opal', 'orchid', 'phoenix',
+    'planet', 'prairie', 'quantum', 'quartz', 'raven', 'reef', 'river', 'saffron', 'shadow', 'silver',
+    'solstice', 'spruce', 'star', 'stone', 'storm', 'summit', 'sunset', 'thunder', 'timber', 'topaz',
+    'valley', 'velvet', 'violet', 'wave', 'whisper', 'willow', 'winter', 'zenith'
+];
+
+const MEANINGFUL_SYMBOLS = '!@#$%&*?';
+
 function getCategoryStyle(cat) {
     return CATEGORY_COLORS[cat] || { bg: 'rgba(99,102,241,0.15)', text: '#818cf8' };
 }
@@ -43,6 +56,14 @@ export default function AddPassword() {
     const [includeLowercase, setIncludeLowercase] = useState(true);
     const [includeNumbers, setIncludeNumbers] = useState(true);
     const [includeSymbols, setIncludeSymbols] = useState(true);
+    const [generatorMode, setGeneratorMode] = useState('random');
+
+    // Meaningful Password Generator State
+    const [meaningfulWordCount, setMeaningfulWordCount] = useState(4);
+    const [meaningfulSeparator, setMeaningfulSeparator] = useState('-');
+    const [meaningfulCapitalize, setMeaningfulCapitalize] = useState(true);
+    const [meaningfulIncludeNumber, setMeaningfulIncludeNumber] = useState(true);
+    const [meaningfulIncludeSymbol, setMeaningfulIncludeSymbol] = useState(true);
 
     const { dbKey, legacyKeys, currentUser } = useAuth();
     const navigate = useNavigate();
@@ -205,6 +226,67 @@ export default function AddPassword() {
         toast.success('Strong password generated and filled!');
     }
 
+    function getCryptoRandomInt(maxExclusive) {
+        const arr = new Uint32Array(1);
+        window.crypto.getRandomValues(arr);
+        return arr[0] % maxExclusive;
+    }
+
+    function pickRandomWord() {
+        return MEANINGFUL_WORDS[getCryptoRandomInt(MEANINGFUL_WORDS.length)];
+    }
+
+    function generateMeaningfulPassword() {
+        const words = [];
+
+        for (let i = 0; i < meaningfulWordCount; i++) {
+            let word = pickRandomWord();
+            if (meaningfulCapitalize && getCryptoRandomInt(2) === 1) {
+                word = word.charAt(0).toUpperCase() + word.slice(1);
+            }
+            words.push(word);
+        }
+
+        let result = words.join(meaningfulSeparator);
+
+        if (meaningfulIncludeNumber) {
+            const num = String(getCryptoRandomInt(100)).padStart(2, '0');
+            result += `${meaningfulSeparator}${num}`;
+        }
+
+        if (meaningfulIncludeSymbol) {
+            const symbol = MEANINGFUL_SYMBOLS[getCryptoRandomInt(MEANINGFUL_SYMBOLS.length)];
+            result += `${meaningfulSeparator}${symbol}`;
+        }
+
+        setPassword(result);
+        toast.success('Meaningful password generated and filled!');
+    }
+
+    function getMeaningfulEntropyBits() {
+        const wordChoices = MEANINGFUL_WORDS.length;
+        let combinations = Math.pow(wordChoices, meaningfulWordCount);
+
+        if (meaningfulCapitalize) {
+            combinations *= Math.pow(2, meaningfulWordCount);
+        }
+        if (meaningfulIncludeNumber) {
+            combinations *= 100;
+        }
+        if (meaningfulIncludeSymbol) {
+            combinations *= MEANINGFUL_SYMBOLS.length;
+        }
+
+        return Math.log2(combinations);
+    }
+
+    function getMeaningfulStrengthLabel(bits) {
+        if (bits < 45) return 'Fair';
+        if (bits < 60) return 'Good';
+        if (bits < 75) return 'Strong';
+        return 'Excellent';
+    }
+
     if (!dbKey) {
         return (
             <div className="flex flex-col items-center justify-center h-64 glass rounded-2xl p-8 glow fade-in max-w-md mx-auto">
@@ -354,85 +436,184 @@ export default function AddPassword() {
 
                     {showGenerator && (
                         <div className="mt-5 space-y-5 scale-in">
-                            <div>
-                                <label className="flex justify-between text-xs text-gray-400 mb-2">
-                                    <span>Length: <strong className="text-indigo-400">{genLength}</strong></span>
-                                    <span>64</span>
-                                </label>
-                                <input
-                                    type="range"
-                                    min="8"
-                                    max="64"
-                                    value={genLength}
-                                    onChange={(e) => setGenLength(Number(e.target.value))}
-                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                                />
+                            <div className="grid grid-cols-2 gap-2 rounded-xl p-2" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setGeneratorMode('random')}
+                                    className="py-2 px-3 rounded-lg text-sm font-medium transition-all"
+                                    style={{
+                                        backgroundColor: generatorMode === 'random' ? 'rgba(99,102,241,0.25)' : 'transparent',
+                                        color: generatorMode === 'random' ? '#a5b4fc' : 'var(--text-secondary)'
+                                    }}
+                                >
+                                    Random
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setGeneratorMode('meaningful')}
+                                    className="py-2 px-3 rounded-lg text-sm font-medium transition-all"
+                                    style={{
+                                        backgroundColor: generatorMode === 'meaningful' ? 'rgba(99,102,241,0.25)' : 'transparent',
+                                        color: generatorMode === 'meaningful' ? '#a5b4fc' : 'var(--text-secondary)'
+                                    }}
+                                >
+                                    Meaningful
+                                </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <label
-                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
-                                    style={{ backgroundColor: 'var(--bg-input)' }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={includeUppercase}
-                                        onChange={(e) => setIncludeUppercase(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
-                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
-                                    />
-                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>A-Z</span>
-                                </label>
-                                <label
-                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
-                                    style={{ backgroundColor: 'var(--bg-input)' }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={includeLowercase}
-                                        onChange={(e) => setIncludeLowercase(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
-                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
-                                    />
-                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>a-z</span>
-                                </label>
-                                <label
-                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
-                                    style={{ backgroundColor: 'var(--bg-input)' }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={includeNumbers}
-                                        onChange={(e) => setIncludeNumbers(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
-                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
-                                    />
-                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>0-9</span>
-                                </label>
-                                <label
-                                    className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover"
-                                    style={{ backgroundColor: 'var(--bg-input)' }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={includeSymbols}
-                                        onChange={(e) => setIncludeSymbols(e.target.checked)}
-                                        className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
-                                        style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
-                                    />
-                                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>!@#</span>
-                                </label>
-                            </div>
+                            {generatorMode === 'random' ? (
+                                <>
+                                    <div>
+                                        <label className="flex justify-between text-xs text-gray-400 mb-2">
+                                            <span>Length: <strong className="text-indigo-400">{genLength}</strong></span>
+                                            <span>64</span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="8"
+                                            max="64"
+                                            value={genLength}
+                                            onChange={(e) => setGenLength(Number(e.target.value))}
+                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                        />
+                                    </div>
 
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={includeUppercase}
+                                                onChange={(e) => setIncludeUppercase(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>A-Z</span>
+                                        </label>
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={includeLowercase}
+                                                onChange={(e) => setIncludeLowercase(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>a-z</span>
+                                        </label>
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={includeNumbers}
+                                                onChange={(e) => setIncludeNumbers(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>0-9</span>
+                                        </label>
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={includeSymbols}
+                                                onChange={(e) => setIncludeSymbols(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>!@#</span>
+                                        </label>
+                                    </div>
 
-                            <button
-                                type="button"
-                                onClick={generatePassword}
-                                className="w-full flex items-center justify-center py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-all btn-glow"
-                            >
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                                Generate & Fill
-                            </button>
+                                    <button
+                                        type="button"
+                                        onClick={generatePassword}
+                                        className="w-full flex items-center justify-center py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-all btn-glow"
+                                    >
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                        Generate & Fill
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="flex justify-between text-xs text-gray-400 mb-2">
+                                            <span>Word Count: <strong className="text-indigo-400">{meaningfulWordCount}</strong></span>
+                                            <span>6</span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="3"
+                                            max="6"
+                                            value={meaningfulWordCount}
+                                            onChange={(e) => setMeaningfulWordCount(Number(e.target.value))}
+                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                            Separator
+                                            <select
+                                                value={meaningfulSeparator}
+                                                onChange={(e) => setMeaningfulSeparator(e.target.value)}
+                                                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                                                style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', borderColor: 'var(--border-input)' }}
+                                            >
+                                                <option value="-">Hyphen (-)</option>
+                                                <option value="_">Underscore (_)</option>
+                                                <option value=".">Dot (.)</option>
+                                                <option value="~">Tilde (~)</option>
+                                            </select>
+                                        </label>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={meaningfulCapitalize}
+                                                onChange={(e) => setMeaningfulCapitalize(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Random Caps</span>
+                                        </label>
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={meaningfulIncludeNumber}
+                                                onChange={(e) => setMeaningfulIncludeNumber(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Add Number</span>
+                                        </label>
+                                        <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl transition-all card-hover col-span-2" style={{ backgroundColor: 'var(--bg-input)' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={meaningfulIncludeSymbol}
+                                                onChange={(e) => setMeaningfulIncludeSymbol(e.target.checked)}
+                                                className="form-checkbox text-indigo-500 rounded focus:ring-indigo-500"
+                                                style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-input)' }}
+                                            />
+                                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Add Symbol</span>
+                                        </label>
+                                    </div>
+
+                                    <div className="rounded-xl px-3 py-2" style={{ backgroundColor: 'rgba(99,102,241,0.12)' }}>
+                                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                            Estimated strength: <strong style={{ color: '#a5b4fc' }}>{getMeaningfulStrengthLabel(getMeaningfulEntropyBits())}</strong>
+                                            {' '}({Math.round(getMeaningfulEntropyBits())} bits)
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={generateMeaningfulPassword}
+                                        className="w-full flex items-center justify-center py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-all btn-glow"
+                                    >
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                        Generate Meaningful & Fill
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

@@ -1,13 +1,21 @@
 import axios from 'axios';
 import { auth } from '../auth/firebase';
 
+const mainBaseURL = import.meta.env.DEV
+    ? '/api'
+    : (import.meta.env.VITE_API_URL_MAIN || 'http://localhost:5000/api');
+
+const bioBaseURL = import.meta.env.DEV
+    ? '/api'
+    : (import.meta.env.VITE_API_URL_BIO || 'http://localhost:5000/api');
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL_MAIN || 'http://localhost:8080/api/v1',
+    baseURL: mainBaseURL,
     timeout: 15000,
 });
 
 export const biometricsApi = axios.create({
-    baseURL: import.meta.env.VITE_API_URL_BIO || 'http://localhost:8080/api/v1',
+    baseURL: bioBaseURL,
     timeout: 15000,
 });
 
