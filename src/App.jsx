@@ -4,11 +4,15 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AddPassword = lazy(() => import('./pages/AddPassword'));
 const TwoFactorSetup = lazy(() => import('./pages/TwoFactorSetup'));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Layout = lazy(() => import('./components/Layout'));
 
 const AppLoader = () => (
@@ -21,16 +25,18 @@ const AppLoader = () => (
 );
 
 const ProtectedRoute = ({ children }) => {
-    const { currentUser, loading, twoFactorVerified } = useAuth();
+    const { currentUser, loading, twoFactorVerified, twoFactorLoading } = useAuth();
 
     if (loading) {
         return <AppLoader />;
     }
 
-    // If not logged in, force login
     if (!currentUser) return <Navigate to="/login" />;
 
-    // Block access if 2FA not verified
+    if (twoFactorLoading) {
+        return <AppLoader />;
+    }
+
     if (!twoFactorVerified) return <Navigate to="/login" />;
 
     // Note: We do NOT check for dbKey here anymore. 
@@ -40,9 +46,9 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-    const { currentUser, twoFactorVerified } = useAuth();
-    // Redirect to dashboard if user is authenticated AND 2FA is verified (or not required)
-    if (currentUser && twoFactorVerified) return <Navigate to="/" />;
+    const { currentUser, loading, twoFactorVerified, twoFactorLoading } = useAuth();
+    if (loading || twoFactorLoading) return <AppLoader />;
+    if (currentUser && twoFactorVerified) return <Navigate to="/dashboard" />;
     return children;
 };
 
@@ -98,14 +104,11 @@ function AppContent() {
                 } />
 
                 <Route path="/" element={
-                    <ProtectedRoute>
-                        <Layout>
-                            <Dashboard />
-                        </Layout>
-                    </ProtectedRoute>
+                    <PublicRoute>
+                        <LandingPage />
+                    </PublicRoute>
                 } />
 
-                {/* /dashboard alias — test runners expect this URL after login */}
                 <Route path="/dashboard" element={
                     <ProtectedRoute>
                         <Layout>
@@ -137,6 +140,24 @@ function AppContent() {
                         </Layout>
                     </ProtectedRoute>
                 } />
+
+                <Route path="/subscription" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <SubscriptionPage />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
+
+                <Route path="/payment" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <PaymentPage />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
+
+                <Route path="/admin" element={<AdminDashboard />} />
 
                 {/* Catch all - Redirect to Home */}
                 <Route path="*" element={<Navigate to="/" replace />} />

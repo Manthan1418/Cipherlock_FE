@@ -6,6 +6,7 @@ import { Shield, Lock, Sparkles, AlertTriangle, UserPlus, LogIn, Sun, Moon } fro
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
+import { setAdminToken, getAdminToken } from '../api/adminSession';
 
 
 // ============================================
@@ -403,14 +404,37 @@ function LoginFormContent() {
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setLoading(true);
+
+        const isUsername = !email.includes('@');
+
+        if (isUsername) {
+            try {
+                const adminRes = await api.post('/admin/login', { username: email, password });
+                setAdminToken(adminRes.data.token);
+                toast.success('Admin login successful');
+                navigate('/admin');
+                return;
+            } catch (err) {
+                toast.error(err?.response?.data?.error || 'Invalid admin credentials');
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
-            setLoading(true);
             await login(email, password);
             if (rememberMe) {
                 localStorage.setItem('cipherlock_remembered_email', email);
             } else {
                 localStorage.removeItem('cipherlock_remembered_email');
             }
+
+            try {
+                const adminRes = await api.post('/admin/login', { username: email, password });
+                setAdminToken(adminRes.data.token);
+            } catch { /* not admin email */ }
+
             const statusRes = await api.get('/auth/2fa/status');
 
             if (statusRes.data.enabled) {
@@ -421,7 +445,7 @@ function LoginFormContent() {
 
             setTwoFactorVerified(true);
             toast.success('Welcome back!');
-            navigate('/dashboard');
+            navigate(getAdminToken() ? '/admin' : '/dashboard');
         } catch (err) {
             console.error(err);
             const code = err.code;
@@ -449,8 +473,14 @@ function LoginFormContent() {
                 sessionStorage.setItem('twoFactorSession', res.data.twoFactorSession);
             }
             setTwoFactorVerified(true);
+
+            try {
+                const adminRes = await api.post('/admin/login', { username: email, password });
+                setAdminToken(adminRes.data.token);
+            } catch { /* not an admin email */ }
+
             toast.success('Identity verified! Welcome back.');
-            navigate('/dashboard');
+            navigate(getAdminToken() ? '/admin' : '/dashboard');
         } catch (err) {
             console.error(err);
             toast.error('Incorrect code — please check your authenticator app.');
@@ -542,64 +572,26 @@ function LoginFormContent() {
 
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                <AnimatedInput
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    delay={0.05}
-                />
+                <AnimatedInput label="Email / Username" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required delay={0.05} />
                 <div className="flex flex-col gap-1">
-                    <AnimatedInput
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        delay={0.1}
-                    />
+                    <AnimatedInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required delay={0.1} />
                     <div className="flex items-center justify-between mt-1">
                         <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                                className="form-checkbox h-4 w-4 text-indigo-500 rounded border-gray-600 bg-gray-800 focus:ring-indigo-500 focus:ring-offset-gray-900 transition duration-150 ease-in-out cursor-pointer"
-                            />
-                            <span className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-                                Remember me
-                            </span>
+                            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="form-checkbox h-4 w-4 text-indigo-500 rounded border-gray-600 bg-gray-800 focus:ring-indigo-500 focus:ring-offset-gray-900 transition duration-150 ease-in-out cursor-pointer" />
+                            <span className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>Remember me</span>
                         </label>
-                        <button
-                            type="button"
-                            onClick={() => setShowReset(true)}
-                            className="text-xs hover:underline text-indigo-400 transition-colors"
-                        >
-                            Forgot Password?
-                        </button>
+                        <button type="button" onClick={() => setShowReset(true)} className="text-xs hover:underline text-indigo-400 transition-colors">Forgot Password?</button>
                     </div>
                 </div>
 
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="pt-1 space-y-3"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="pt-1 space-y-3">
                     <AnimatedButton loading={loading}>
                         <LogIn className="w-5 h-5 mr-2" />
                         Sign In
                     </AnimatedButton>
 
                     {isBiometricAvailable && (
-                        <button
-                            type="button"
-                            onClick={handleBiometricLogin}
-                            disabled={loading}
-                            className="w-full flex justify-center items-center py-3 px-4 border text-base font-semibold rounded-xl text-indigo-500 bg-indigo-500/10 hover:bg-indigo-500/20 focus:outline-none transition-colors duration-200 border-indigo-500/30"
-                        >
+                        <button type="button" onClick={handleBiometricLogin} disabled={loading} className="w-full flex justify-center items-center py-3 px-4 border text-base font-semibold rounded-xl text-indigo-500 bg-indigo-500/10 hover:bg-indigo-500/20 focus:outline-none transition-colors duration-200 border-indigo-500/30">
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-2.6 4.63a4 4 0 1 1-5.36-6.36C2.87 9.54 4.18 9 5.25 9c.28 0 .56.09.81.27m5.94 10.73c2.5-2.12 2.6-3.61 2.6-4.63a2 2 0 0 0-2-2c-1.07 0-2.38.54-3.21 1.27a4 4 0 1 1-5.36-6.36" />
                                 <path d="M12 2v20" />

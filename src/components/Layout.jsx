@@ -1,8 +1,9 @@
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { LogOut, Shield, ShieldCheck, Sun, Moon, Fingerprint } from "lucide-react";
+import { LogOut, Shield, ShieldCheck, Sun, Moon, Fingerprint, CreditCard, Users } from "lucide-react";
 import { toast } from 'react-hot-toast';
 import { Link } from "react-router-dom";
+import { getAdminToken } from "../api/adminSession";
 
 
 function Particles() {
@@ -18,6 +19,7 @@ function Particles() {
 export default function Layout({ children }) {
     const { logout, currentUser, enableBiometrics } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const isAdmin = !!getAdminToken();
 
     return (
         <div className="min-h-screen animated-bg font-sans relative overflow-hidden" style={{ color: 'var(--text-primary)' }}>
@@ -95,6 +97,40 @@ export default function Layout({ children }) {
                             >
                                 <ShieldCheck className="w-5 h-5" />
                             </Link>
+                            <Link
+                                to="/subscription"
+                                className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
+                                style={{ color: 'var(--text-secondary)' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'var(--glow-color)';
+                                    e.currentTarget.style.color = 'var(--accent-primary)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                }}
+                                title="Subscription"
+                            >
+                                <CreditCard className="w-5 h-5" />
+                            </Link>
+                            {isAdmin && (
+                                <Link
+                                    to="/admin"
+                                    className="p-2 mr-2 rounded-lg transition-all duration-300 hover:scale-110"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'var(--glow-color)';
+                                        e.currentTarget.style.color = 'var(--accent-primary)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        e.currentTarget.style.color = 'var(--text-secondary)';
+                                    }}
+                                    title="Admin Dashboard"
+                                >
+                                    <Users className="w-5 h-5" />
+                                </Link>
+                            )}
                             <button
                                 onClick={() => logout()}
                                 className="p-2 rounded-lg transition-all duration-300 hover:scale-110"

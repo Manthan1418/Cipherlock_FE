@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
     const [twoFactorVerified, _setTwoFactorVerified] = useState(() => {
         return sessionStorage.getItem('twoFactorVerified') === 'true';
     });
+    const [twoFactorLoading, setTwoFactorLoading] = useState(true);
 
     // Wrapper that also persists to sessionStorage
     const setTwoFactorVerified = useCallback((value) => {
@@ -81,6 +82,7 @@ export function AuthProvider({ children }) {
     }, []);
 
     async function check2FAStatus() {
+        setTwoFactorLoading(true);
         try {
             const res = await api.get('/auth/2fa/status');
             if (res.data.enabled) {
@@ -90,26 +92,26 @@ export function AuthProvider({ children }) {
             }
         } catch (err) {
             console.error("Failed to check 2FA status", err);
-            // Default to verified if error? No, fail secure.
-            // But if it's network error on login... 
-            // Let's assume false for security.
             setTwoFactorVerified(false);
+        } finally {
+            setTwoFactorLoading(false);
         }
     }
 
     // Check 2FA Status when user logs in
     useEffect(() => {
         if (currentUser) {
-            // If already verified this session (e.g. page reload), skip the check
             if (sessionStorage.getItem('twoFactorVerified') === 'true') {
                 _setTwoFactorVerified(true);
+                setTwoFactorLoading(false);
             } else {
                 check2FAStatus();
             }
         } else if (currentUser === null) {
-            // Only clear on confirmed logout (null from onAuthStateChanged),
-            // NOT on initial mount when currentUser is still undefined.
             setTwoFactorVerified(false);
+            setTwoFactorLoading(false);
+        } else {
+            setTwoFactorLoading(false);
         }
     }, [currentUser, setTwoFactorVerified]);
 
@@ -263,8 +265,9 @@ export function AuthProvider({ children }) {
         currentUser,
         dbKey,
         legacyKeys,
-        setDbKey, // helper if we implement "Unlock" screen
+        setDbKey,
         twoFactorVerified,
+        twoFactorLoading,
         setTwoFactorVerified,
         signup,
         login,
@@ -278,6 +281,7 @@ export function AuthProvider({ children }) {
         dbKey,
         legacyKeys,
         twoFactorVerified,
+        twoFactorLoading,
         setTwoFactorVerified,
         signup,
         login,
